@@ -8,10 +8,27 @@ import {
   ParentVersionNotFoundError,
   ProjectConflictError,
   ProjectNotFoundError,
+  CurrentVersionNotFoundError,
   ProjectVersionMismatchError,
   VersionConflictError,
 } from './errors.js';
 
+function versionRecordForComparison(version: ContentVersion): unknown {
+  return {
+    id: version.id,
+    projectId: version.projectId,
+    kind: version.kind,
+    parentVersionId: version.parentVersionId ?? null,
+    content: version.content,
+    protectedFields: version.protectedFields,
+    sourceRefs: version.sourceRefs,
+    promptTemplateVersion: version.promptTemplateVersion ?? null,
+    modelInfo: version.modelInfo ?? null,
+    createdBy: version.createdBy,
+    userConfirmed: version.userConfirmed,
+    createdAt: version.createdAt.toISOString(),
+  };
+}
 export class InMemoryContentRepository implements ContentRepository {
   private readonly projects = new Map<string, ContentProject>();
   private readonly versions = new Map<string, ContentVersion>();
@@ -22,6 +39,15 @@ export class InMemoryContentRepository implements ContentRepository {
     const project = createContentProject(input, this.dependencies);
     if (this.projects.has(project.id)) {
       throw new ProjectConflictError(project.id);
+    }
+    if (project.currentVersionId !== undefined) {
+      const currentVersion = this.versions.get(project.currentVersionId);
+      if (currentVersion === undefined) {
+        throw new CurrentVersionNotFoundError(project.currentVersionId);
+      }
+      if (currentVersion.projectId !== project.id) {
+        throw new ProjectVersionMismatchError(project.id, project.currentVersionId);
+      }
     }
     const stored = cloneAndFreeze(project);
     this.projects.set(stored.id, stored);
@@ -37,15 +63,28 @@ export class InMemoryContentRepository implements ContentRepository {
     if (!this.projects.has(project.id)) {
       throw new ProjectNotFoundError(project.id);
     }
+    if (project.currentVersionId !== undefined) {
+      const currentVersion = this.versions.get(project.currentVersionId);
+      if (currentVersion === undefined) {
+        throw new CurrentVersionNotFoundError(project.currentVersionId);
+      }
+      if (currentVersion.projectId !== project.id) {
+        throw new ProjectVersionMismatchError(project.id, project.currentVersionId);
+      }
+    }
     const stored = cloneAndFreeze(project);
     this.projects.set(stored.id, stored);
     return cloneAndFreeze(stored);
   }
 
   async saveVersion(version: ContentVersion): Promise<void> {
+    if (!this.projects.has(version.projectId)) {
+      throw new ProjectNotFoundError(version.projectId);
+    }
+
     const existing = this.versions.get(version.id);
     if (existing !== undefined) {
-      if (createContentHash(existing.content) !== createContentHash(version.content)) {
+      if (createContentHash(versionRecordForComparison(existing)) !== createContentHash(versionRecordForComparison(version))) {
         throw new VersionConflictError(version.id);
       }
       return;

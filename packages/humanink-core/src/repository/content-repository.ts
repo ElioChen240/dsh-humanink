@@ -1,4 +1,4 @@
-﻿import type { ContentProject, CreateContentProjectInput } from '../project/content-project.js';
+import type { ContentProject, CreateContentProjectInput } from '../project/content-project.js';
 import type { ContentVersion } from '../versioning/content-version.js';
 
 export interface ContentVersionSummary {
@@ -14,7 +14,7 @@ export interface ContentVersionSummary {
 export interface ContentRepository {
   createProject(input: CreateContentProjectInput): Promise<ContentProject>;
   getProject(projectId: string): Promise<ContentProject | null>;
-  updateProject?(project: ContentProject): Promise<ContentProject>;
+  updateProject(project: ContentProject): Promise<ContentProject>;
   saveVersion(version: ContentVersion): Promise<void>;
   getVersion(versionId: string): Promise<ContentVersion | null>;
   listVersions(projectId: string): Promise<readonly ContentVersionSummary[]>;

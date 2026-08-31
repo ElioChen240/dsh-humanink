@@ -1,4 +1,4 @@
-﻿import {
+import {
   createContentProject,
   updateContentProjectCurrentVersion,
   type ContentProject,
@@ -43,14 +43,15 @@ export class ContentProjectService {
       userConfirmed: true,
     };
     const sourceVersion = createContentVersion(sourceInput, this.dependencies);
+    const createdProject = await this.repository.createProject(projectWithoutVersion);
+    await this.repository.saveVersion(sourceVersion);
     const project = updateContentProjectCurrentVersion(
-      projectWithoutVersion,
+      createdProject,
       sourceVersion.id,
       sourceVersion.createdAt,
     );
-    await this.repository.createProject(project);
-    await this.repository.saveVersion(sourceVersion);
-    return { project, sourceVersion };
+    const initializedProject = await this.repository.updateProject(project);
+    return { project: initializedProject, sourceVersion };
   }
 
   async createDerivedVersion(input: CreateDerivedVersionRequest): Promise<ContentVersion> {
@@ -118,9 +119,6 @@ export class ContentProjectService {
   }
 
   private async advanceCurrentVersion(project: ContentProject, version: ContentVersion): Promise<void> {
-    if (this.repository.updateProject === undefined) {
-      throw new Error('ContentRepository.updateProject is required for version advancement');
-    }
     await this.repository.updateProject(updateContentProjectCurrentVersion(project, version.id, version.createdAt));
   }
 }

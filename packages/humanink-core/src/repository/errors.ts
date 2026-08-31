@@ -1,4 +1,4 @@
-﻿export class VersionConflictError extends Error {
+export class VersionConflictError extends Error {
   readonly versionId: string;
 
   constructor(versionId: string) {
@@ -11,8 +11,8 @@
 export class ParentVersionNotFoundError extends Error {
   readonly parentVersionId: string;
 
-  constructor(parentVersionId: string) {
-    super(`父版本不存在: ${parentVersionId}`);
+  constructor(parentVersionId: string, message?: string) {
+    super(message ?? `父版本不存在: ${parentVersionId}`);
     this.name = 'ParentVersionNotFoundError';
     this.parentVersionId = parentVersionId;
   }
@@ -47,5 +47,15 @@ export class ProjectConflictError extends Error {
     super(`内容项目已存在: ${projectId}`);
     this.name = 'ProjectConflictError';
     this.projectId = projectId;
+  }
+}
+
+export class CurrentVersionNotFoundError extends Error {
+  readonly versionId: string;
+
+  constructor(versionId: string) {
+    super(`当前版本不存在: ${versionId}`);
+    this.name = 'CurrentVersionNotFoundError';
+    this.versionId = versionId;
   }
 }

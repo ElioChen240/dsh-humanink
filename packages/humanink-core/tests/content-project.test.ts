@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ContentVersion } from '../src/versioning/content-version.js';
 import {
   ContentProjectService,
   InMemoryContentRepository,
@@ -28,6 +29,14 @@ function createService() {
   };
 }
 
+class FailingSourceRepository extends InMemoryContentRepository {
+  override async saveVersion(version: ContentVersion): Promise<void> {
+    if (version.kind === 'source') {
+      throw new Error('source persistence failed');
+    }
+    await super.saveVersion(version);
+  }
+}
 describe('content project versioning', () => {
   it('creates a project with an immutable source version', async () => {
     const { repository, service } = createService();
@@ -43,6 +52,24 @@ describe('content project versioning', () => {
     expect(await repository.listVersions(result.project.id)).toHaveLength(1);
   });
 
+  it('does not leave a dangling current-version pointer when source persistence fails', async () => {
+    let idSequence = 0;
+    const repository = new FailingSourceRepository();
+    const service = new ContentProjectService(repository, {
+      idFactory: (prefix: string) => `${prefix}_${++idSequence}`,
+      clock: () => new Date('2026-08-31T00:00:00.000Z'),
+    });
+
+    await expect(service.createProject({
+      title: '失败项目',
+      source: sourceInput,
+    })).rejects.toThrow('source persistence failed');
+
+    const project = await repository.getProject('project_1');
+    expect(project).not.toBeNull();
+    expect(project?.currentVersionId).toBeUndefined();
+    expect(await repository.getVersion('version_2')).toBeNull();
+  });
   it('derives a new version without changing the parent version', async () => {
     const { repository, service } = createService();
     const { project, sourceVersion } = await service.createProject({
@@ -95,6 +122,7 @@ describe('content project versioning', () => {
       createdAt: new Date('2026-08-31T00:00:00.000Z'),
     });
 
+    await repository.createProject({ id: version.projectId, title: '测试项目' });
     await repository.saveVersion(version);
     await repository.saveVersion(version);
 

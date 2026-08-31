@@ -3,3 +3,5 @@ export * from './project/index.js';
 export * from './repository/index.js';
 export * from './shared/index.js';
 export * from './versioning/index.js';
+export * from './ports/index.js';
+export * from './title/index.js';
