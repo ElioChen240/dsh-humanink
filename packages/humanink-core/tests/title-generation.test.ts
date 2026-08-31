@@ -96,6 +96,7 @@ describe('title generation use case', () => {
     expect(request?.input).toMatchObject({
       projectId: project.id,
       sourceVersionId: sourceVersion.id,
+      sourceTitle: source.title,
       sourceText: source.body,
       brief: '面向普通读者解释核心方法',
       audience: '普通读者',

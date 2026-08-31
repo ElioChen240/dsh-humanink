@@ -1,13 +1,14 @@
 {
   "name": "humanink",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "build": "pnpm --filter @humanink/core build",
-    "test": "pnpm --filter @humanink/core test",
-    "typecheck": "pnpm --filter @humanink/core typecheck"
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test:mvp": "vitest run packages/humanink-harness/tests/mvp-workflow.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.7.2",

@@ -17,6 +17,15 @@ importers:
 
   packages/humanink-core: {}
 
+  packages/humanink-harness:
+    dependencies:
+      '@humanink/core':
+        specifier: workspace:*
+        version: link:../humanink-core
+      '@humanink/storage':
+        specifier: workspace:*
+        version: link:../humanink-storage
+
   packages/humanink-storage:
     dependencies:
       '@humanink/core':

@@ -182,6 +182,7 @@ export class TitleGenerationUseCase {
       input: {
         projectId: input.projectId,
         sourceVersionId: input.sourceVersionId,
+        sourceTitle: sourceVersion.content.title,
         sourceText: sourceVersion.content.body,
         ...(input.brief === undefined ? {} : { brief: input.brief }),
         ...(input.audience === undefined ? {} : { audience: input.audience }),

@@ -5,3 +5,4 @@ export * from './shared/index.js';
 export * from './versioning/index.js';
 export * from './ports/index.js';
 export * from './title/index.js';
+export * from './writing/index.js';

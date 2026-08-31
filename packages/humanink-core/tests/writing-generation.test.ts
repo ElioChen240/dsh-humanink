@@ -102,6 +102,7 @@ describe('writing core use cases', () => {
         projectId: project.id,
         sourceVersionId: sourceVersion.id,
         audience: '社区咖啡店店主',
+        selectedTitle: '社区咖啡店留住熟客，靠的不是打折',
         protectedFields: ['复购率数据'],
         sourceRefs: ['user-note-1'],
       },
@@ -118,8 +119,10 @@ describe('writing core use cases', () => {
     expect(requests[0]?.input).toMatchObject({
       projectId: project.id,
       sourceVersionId: sourceVersion.id,
+      sourceTitle: source.title,
       sourceText: source.body,
       audience: '社区咖啡店店主',
+      selectedTitle: '社区咖啡店留住熟客，靠的不是打折',
     });
     expect(result.version.parentVersionId).toBe(sourceVersion.id);
     expect(result.version.kind).toBe('brief');

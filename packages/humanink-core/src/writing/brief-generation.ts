@@ -32,6 +32,7 @@ export interface BriefGenerationInput extends WritingVersionMetadataInput {
   readonly projectId: string;
   readonly sourceVersionId: string;
   readonly audience?: string;
+  readonly selectedTitle?: string;
   readonly objective?: string;
   readonly angle?: string;
   readonly constraints?: string;
@@ -70,6 +71,7 @@ function validateBrief(value: unknown): BriefOutput {
 
 function createBriefRequest(
   input: BriefGenerationInput,
+  sourceTitle: string,
   sourceText: string,
   signal: AbortSignal,
   options: WritingExecutionOptions,
@@ -81,8 +83,10 @@ function createBriefRequest(
     input: {
       projectId: input.projectId,
       sourceVersionId: input.sourceVersionId,
+      sourceTitle,
       sourceText,
       ...(input.audience === undefined ? {} : { audience: input.audience }),
+      ...(input.selectedTitle === undefined ? {} : { selectedTitle: input.selectedTitle }),
       ...(input.objective === undefined ? {} : { objective: input.objective }),
       ...(input.angle === undefined ? {} : { angle: input.angle }),
       ...(input.constraints === undefined ? {} : { constraints: input.constraints }),
@@ -106,7 +110,7 @@ export class BriefGenerationUseCase {
       'Source',
     );
     const response = await this.dependencies.llmProvider.generate<unknown>(
-      createBriefRequest(input, sourceVersion.content.body, signal, options),
+      createBriefRequest(input, sourceVersion.content.title, sourceVersion.content.body, signal, options),
     );
     abortIfNeeded(signal);
     const output = validateBrief(response.value);

@@ -1,5 +1,5 @@
 {
-  "name": "@humanink/storage",
+  "name": "@humanink/harness",
   "version": "0.4.0",
   "private": true,
   "type": "module",
@@ -15,6 +15,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@humanink/core": "workspace:*"
+    "@humanink/core": "workspace:*",
+    "@humanink/storage": "workspace:*"
+  },
+  "humanink": {
+    "harnessCompatibility": {
+      "cordis": "4.0.2",
+      "commands": "0.0.1-rc.1",
+      "llm": "0.0.1-rc.1"
+    }
   }
 }
