@@ -1,0 +1,16 @@
+{
+  "name": "humanink",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "pnpm --filter @humanink/core build",
+    "test": "pnpm --filter @humanink/core test",
+    "typecheck": "pnpm --filter @humanink/core typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
+  }
+}

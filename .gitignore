@@ -29,3 +29,7 @@ venv/
 
 # HumanInk local content data
 .humanink/
+
+# Local package manager cache
+.pnpm-store/
+*.tsbuildinfo
