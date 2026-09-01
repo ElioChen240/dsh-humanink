@@ -1,6 +1,6 @@
 {
   "name": "@humanink/harness",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -15,6 +15,7 @@
     "typecheck": "pnpm --filter @humanink/core build && pnpm --filter @humanink/storage build && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.2",
     "@humanink/core": "workspace:*",
     "@humanink/storage": "workspace:*"
   },

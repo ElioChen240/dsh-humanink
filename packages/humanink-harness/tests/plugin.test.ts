@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   apply,
+  Config,
   createHumanInkApplication,
   inject,
   name,
@@ -118,6 +119,27 @@ const invalidConfigs: readonly {
     error: 'backoffMs must be a non-negative finite number',
   },
 ];
+
+describe('HumanInk Harness configuration schema', () => {
+  it('provides install-time defaults for a bundle configuration', () => {
+    expect(Config({})).toMatchObject({
+      dataDir: '.humanink',
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+      timeoutMs: 60_000,
+      maxAttempts: 3,
+      backoffMs: 500,
+    });
+  });
+
+  it('rejects invalid operational limits before the plugin loads', () => {
+    expect(() => Config({ timeoutMs: 0 })).toThrow();
+    expect(() => Config({ maxAttempts: 0 })).toThrow();
+    expect(() => Config({ backoffMs: -1 })).toThrow();
+    expect(() => Config({ provider: '   ' })).toThrow();
+    expect(() => Config({ model: '' })).toThrow();
+  });
+});
 
 describe('HumanInk Harness plugin', () => {
   it.each([

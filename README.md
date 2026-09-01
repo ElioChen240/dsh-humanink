@@ -55,6 +55,30 @@ docs/
 
 该目录已加入 `.gitignore`，正文和任务数据不会被误提交到 Git。
 
+## 一键安装到 DeepSeek Harness
+
+HumanInk 已按 DeepSeek Harness 的 bundle 机制提供根目录组合包 manifest。Harness CLI 已安装时，可以直接把 GitHub 仓库安装到指定 profile：
+
+```powershell
+dsh plugin --profile humanink add github:ElioChen240/HumanInk#main
+```
+
+安装后启动并验证配置：
+
+```powershell
+dsh --profile humanink --dump-config
+dsh --profile humanink web
+```
+
+GitHub 源码安装会执行包的 `prepare` 构建脚本。pnpm 10 及以上版本可能要求在 profile 的 `pnpm-workspace.yaml` 中显式允许构建：
+
+```yaml
+allowBuilds:
+  humanink: true
+```
+
+如果不希望在安装时执行源码构建，可先在可信环境打包，再安装生成的 `.tgz`。完整说明见 [`docs/usage.md`](docs/usage.md)。
+
 ## 安装与验证
 
 项目使用 pnpm workspace。若机器没有全局 pnpm，可通过 `npx` 调用固定版本：

@@ -1,0 +1,7 @@
+- insert:
+    - id: humanink
+      name: humanink
+      config:
+        dataDir: '.humanink'
+        provider: 'deepseek'
+        model: 'deepseek-chat'

@@ -25,7 +25,44 @@ npx --yes pnpm@11.7.0 build
 npx --yes pnpm@11.7.0 test:mvp
 ```
 
-## 3. Harness 接入
+## 3. 一键安装为 Harness bundle
+
+DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `dsh.bundle` manifest 的 npm 组合包。HumanInk 根目录已经提供：
+
+- `main`：指向构建后的插件入口；
+- `files`：只发布运行所需的构建产物和 patch；
+- `dsh.bundle.patch`：把 `humanink` 插件行加入 profile；
+- `prepare`：从 GitHub 源码安装时先构建 Core、Storage 和 Harness。
+
+Harness CLI 已安装时，直接执行：
+
+```powershell
+dsh plugin --profile humanink add github:ElioChen240/HumanInk#main
+dsh --profile humanink --dump-config
+dsh --profile humanink web
+```
+
+建议使用固定 commit 或 release tag，不要依赖会继续变化的分支。Git 源码安装会在本机执行 `prepare`，pnpm 10 及以上可能要求用户确认构建授权；只对可信源码授权。
+
+如果要避免安装时构建，可以在可信环境执行 `pnpm pack`，再安装生成的 tarball：
+
+```powershell
+npx --yes pnpm@11.7.0 pack
+dsh plugin --profile humanink add .\humanink-0.6.0.tgz
+```
+
+当前 bundle 的默认配置由 Harness 标准 schema 提供：
+
+| 配置 | 默认值 | 说明 |
+| --- | --- | --- |
+| `provider` | `deepseek` | Harness 中已注册的 LLM provider route。 |
+| `model` | `deepseek-chat` | 默认模型名，可在 profile patch 中覆盖。 |
+| `dataDir` | `.humanink` | 本地 JSONL 数据目录。 |
+| `timeoutMs` | `60000` | 单次模型调用超时。 |
+| `maxAttempts` | `3` | 临时错误最大尝试次数。 |
+| `backoffMs` | `500` | 重试退避基准毫秒数。 |
+
+## 4. Harness 接入
 
 在 Harness 插件宿主中加载 `@humanink/harness` 的 `apply`：
 
@@ -58,7 +95,7 @@ const dispose = apply(ctx, {
 
 HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials 服务管理。
 
-## 4. 命令总览
+## 5. 命令总览
 
 | 命令 | 输入 | 输出/效果 |
 | --- | --- | --- |
@@ -73,7 +110,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 | `/humanink-cancel` | `taskId` 或 `{"taskId":"..."}` | 请求取消尚未结束的任务。 |
 | `/humanink-export` | `versionId` 或 `{"versionId":"..."}` | 导出指定内容版本的 Markdown。 |
 
-## 5. 标准工作流：从标题到文章
+## 6. 标准工作流：从标题到文章
 
 ### 5.1 创建项目
 
@@ -131,7 +168,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 `length` 只接受 `short`、`medium` 或 `long`。成功后会创建 `draft` 版本。
 
-## 6. 标准工作流：改写已有内容
+## 7. 标准工作流：改写已有内容
 
 如果已有一段文章，可以先把原文作为 `source.body` 创建项目，再直接生成简报、大纲，或对指定版本执行人味化：
 
@@ -149,7 +186,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 如果保护字段被删除、改写或无法定位，任务会失败并返回 `HUMANIZE_PROTECTED_FIELD_VALIDATION_FAILED`，不会保存新的 `humanized` 版本。
 
-## 7. 发布前复核
+## 8. 发布前复核
 
 对任意文章版本运行：
 
@@ -166,7 +203,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 复核不是事实认证、版权审计或自动发布许可；它只提示发布前应人工确认的问题。
 
-## 8. 导出
+## 9. 导出
 
 ```text
 /humanink-export version_humanized
@@ -180,7 +217,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 当前导出格式为 Markdown。HTML、TXT、多平台格式和发布接口留到后续版本。
 
-## 9. 任务状态与取消
+## 10. 任务状态与取消
 
 任务快照包含以下稳定字段：
 
@@ -207,7 +244,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 取消是协作式的：如果任务已结束或不存在，会返回 `TASK_NOT_CANCELLABLE`；如果模型请求已进入不可中断阶段，可能需要等待当前步骤落盘后才进入终态。
 
-## 10. 本地数据文件
+## 11. 本地数据文件
 
 默认数据目录是 `.humanink/`，可通过 `dataDir` 改写：
 
@@ -220,7 +257,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 排障时优先用 `task.operationId` 对照 `transactions.jsonl` 与 `tasks.jsonl`。不要把 `.humanink/` 提交到 Git。
 
-## 11. 错误码与处理建议
+## 12. 错误码与处理建议
 
 | 错误码 | 常见原因 | 建议 |
 | --- | --- | --- |
@@ -237,7 +274,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 | `HUMANIZE_PROTECTED_FIELD_VALIDATION_FAILED` | 人味化结果破坏了保护字段。 | 缩小改写范围，明确要求保留数字、人名、时间和关键结论。 |
 | `HUMANINK_CAPABILITY_UNAVAILABLE` | 当前能力未启用或 Provider 未配置。 | 检查宿主配置，或跳过该能力继续文字流程。 |
 
-## 12. 当前边界与后续能力
+## 13. 当前边界与后续能力
 
 当前版本只保证命令驱动的文字工作流。以下能力尚未作为可交付功能：
 

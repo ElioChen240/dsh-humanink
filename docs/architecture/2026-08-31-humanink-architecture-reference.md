@@ -680,7 +680,9 @@ HumanInk/
 ├─ docs/
 │  ├─ architecture/
 │  └─ superpowers/
-├─ package.json
+├─ cordis.patch.yml       # bundle 安装层
+├─ tsdown.config.ts       # 自包含插件构建配置
+├─ package.json            # dsh.bundle manifest
 ├─ pnpm-workspace.yaml
 ├─ tsconfig.json
 ├─ VERSION
@@ -697,20 +699,20 @@ HumanInk/
 - Git；
 - 浏览器验收使用 Chromium/Chrome；
 - 本地使用 Fake LLM、Fake Detection 和 JSONL Repository，不要求开发者一开始就配置真实外部服务；
+- `pnpm humanink:dev` 会先构建工作区、生成本地 Cordis patch，再调用 Harness 的 `dsh web --patch` 启动；
 - 真实凭据通过本机安全配置注入，示例配置只放变量名和能力说明。
 
 ### 12.3 构建产物
 
 正式发布至少包含：
 
-1. Harness 可加载的插件入口和 manifest；
-2. `humanink-core` 的 ESM 代码与类型声明；
-3. Client UI 构建产物；
-4. 默认提示词版本和运行时 Schema；
-5. 最小安装、配置、使用和故障排查文档；
-6. 版本号、变更记录和可复现的锁文件。
+1. 根目录 `package.json` 中的 `dsh.bundle` manifest；
+2. `cordis.patch.yml` 及 Harness 可加载的自包含 ESM 插件入口；
+3. `@deepseek-ai/schemastery` 运行时 Schema 和默认配置；
+4. 最小安装、配置、使用和故障排查文档；
+5. 版本号、变更记录和可复现的锁文件。
 
-发布前必须从干净目录安装一次，并以 Fake Provider 完成最小工作流，再决定是否进入真实模型和检测服务验收。
+发布前必须从干净目录安装一次，并以 Fake Provider 完成最小工作流，再决定是否进入真实模型和检测服务验收。GitHub 源码安装必须验证 `prepare` 能生成自包含入口；如果不希望用户执行安装构建，则交付预构建 npm 包或 tarball。
 
 ## 13. P1/P2 扩展设计
 

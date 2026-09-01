@@ -1,3 +1,4 @@
+import Schema from '@deepseek-ai/schemastery';
 import {
   BriefGenerationUseCase,
   ContentProjectService,
@@ -34,6 +35,21 @@ export interface HumanInkHarnessConfig {
   readonly maxAttempts?: number;
   readonly backoffMs?: number;
 }
+
+/**
+ * DeepSeek Harness uses this Standard Schema export to validate cordis.yml
+ * configuration and to provide defaults when the bundle is installed.
+ */
+export const Config = Schema.object({
+  dataDir: Schema.string().pattern(/\S/).default('.humanink'),
+  provider: Schema.string().pattern(/\S/).default('deepseek'),
+  model: Schema.string().pattern(/\S/).default('deepseek-chat'),
+  temperature: Schema.number().min(0),
+  maxTokens: Schema.natural().min(1),
+  timeoutMs: Schema.number().min(1).default(60_000),
+  maxAttempts: Schema.natural().min(1).default(3),
+  backoffMs: Schema.number().min(0).default(500),
+});
 
 function requireText(value: string, field: string): string {
   const normalized = value.trim();

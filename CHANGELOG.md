@@ -1,5 +1,11 @@
 # 变更记录
 
+## [0.6.0] - 2026-09-01
+
+- 按 DeepSeek Harness 官方 bundle 机制补充根目录可安装组合包 manifest、Cordis patch 和 prepare 构建入口。
+- 导出 Harness 标准 Config schema，为 provider、model、dataDir、超时和重试参数提供校验与默认值。
+- 新增一键安装、profile 启动、源码构建授权和 tarball 交付说明。
+- 使用 tsdown 生成自包含 Harness 入口，避免 GitHub 安装依赖旁边存在 monorepo。
 ## [0.5.1] - 2026-09-01
 
 - 删除独立产品演示页目录和对应的历史实现计划文档，当前交付聚焦命令驱动的 MVP 文字闭环。
