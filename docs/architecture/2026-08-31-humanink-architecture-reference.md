@@ -70,7 +70,7 @@ HumanInk 采用“**Harness 适配层 + 独立内容领域核心 + 可替换 Pro
 3. **可恢复**：外部服务失败、超时、取消或进程重启不能覆盖用户原文，也不能把半成品标记为最终稿。
 4. **可替换**：首期使用 Harness 的 LLM 和 Storage；本地可用 Fake/JSONL 适配器，未来可替换模型、数据库、搜索和图片服务。
 5. **可解释**：人味化输出修改原因；复核输出问题、证据状态和建议；朱雀输出只作为外部参考，不作为“真人认证”。
-6. **低耦合**：Demo、正式 Harness Client UI 和 Core 可以分别开发、测试和发布。
+6. **低耦合**：命令能力、正式 Harness Client UI 和 Core 可以分别开发、测试和发布。
 
 ### 2.2 明确不做
 
@@ -98,7 +98,7 @@ HumanInk 采用“**Harness 适配层 + 独立内容领域核心 + 可替换 Pro
 | 边界校验 | Zod | 4.x 或项目锁定的兼容小版本，仅在输入/输出边界使用 | 校验用户输入、模型 JSON、Provider 返回值，避免错误数据进入版本库 | 只依赖 TypeScript 类型无法防御运行时数据；Harness Schema 只用于宿主边界 |
 | LLM | Core 定义 `LlmProvider`，Adapter 映射 `ctx.llm` | 不在 Core 固定具体模型 | 支持模型切换、Mock、自定义提示词版本和失败降级 | 在 Core 直接调用 DeepSeek SDK 会锁死供应商边界 |
 | 持久化 | 生产使用 Harness Storage Adapter；本地使用 JSON/JSONL Adapter | Adapter 可替换，数据模型保持一致 | MVP 无原生数据库安装负担，版本记录适合追加写入 | SQLite/PostgreSQL 在多用户、查询和并发需求明确后再引入 |
-| 前端 | MVP Demo 继续 Vanilla HTML/CSS/JS；正式 Client UI 使用 React + 官方 Slot/Primitive | Demo 不作为正式插件 UI 依赖 | Demo 零构建依赖、易验收；React 适合复杂编辑器和异步状态 | Tailwind 暂不使用，避免与 Harness 宿主样式冲突 |
+| 前端 | MVP 先交付命令驱动流程；正式 Client UI 使用 React + 官方 Slot/Primitive | 当前不交付独立产品演示页 | 命令路径更易自动化验收；React 适合复杂编辑器和异步状态 | Tailwind 暂不使用，避免与 Harness 宿主样式冲突 |
 | Markdown/HTML 导出 | Markdown 为规范源格式；HTML 使用受控 Markdown Renderer 并做清理 | 导出器独立于 Core 编排 | 便于版本 diff、复制和跨平台迁移 | 直接拼接原始 HTML 有 XSS 风险；富文本编辑器后置 |
 | 测试 | Vitest + jsdom + Playwright | PR 至少 Core、Adapter、静态检查；发布前加浏览器验收 | 覆盖同步规则、异步任务、Client UI 和响应式行为 | Jest 可行但不优先；只做手工点击不满足交付要求 |
 | 类型/质量 | `tsc --noEmit`、oxlint、`git diff --check` | 每次提交前执行 | 分别覆盖类型、静态质量和补丁空白错误 | 只依赖 IDE 检查无法形成可复现门禁 |
@@ -175,10 +175,10 @@ humanink-harness/
 
 适配层不实现标题算法、人味化规则、文章版本规则和检测结论。
 
-### 4.3 `humanink-client` 与现有 Demo
+### 4.3 `humanink-client` 正式 UI 边界
 
-- `demo/` 是独立的交互验证物，保留 Vanilla HTML/CSS/JS，不引入 Harness 运行时；
-- 正式 UI 单独放在 `humanink-client`，使用 React；
+- 当前 MVP 不保留独立产品演示页，交付重点是可测试的 Harness 命令和内容版本链；
+- 正式 UI 后续单独放在 `humanink-client`，使用 React；
 - 正式 UI 通过 Adapter 提供的 DTO 和事件协议工作，不直接读写 Repository；
 - 所有生成按钮都显示当前项目、当前文章版本、执行状态和取消入口；
 - UI 必须支持“查看原稿、查看派生稿、查看修改说明、恢复到旧版本”，而不是只显示最后一次模型输出。
@@ -239,7 +239,7 @@ export function apply(ctx: HarnessContext) {
 - 不依赖宿主页面的私有 DOM、CSS class 或 URL 结构；
 - 重要操作提供键盘焦点、取消、错误重试和版本回退；
 - 深色模式、窄屏布局、减少动效和长文本滚动属于验收范围；
-- Demo 的视觉实现可以先行，但不能把 Demo 的本地假数据协议当成正式 API。
+- 正式 UI 的视觉原型可以先行，但不能把临时本地假数据协议当成正式 API。
 
 ## 6. Core Provider 接口
 
@@ -662,7 +662,7 @@ pnpm build
 git diff --check
 ```
 
-当前仓库尚未落地正式 TypeScript workspace 时，文档和 Demo 变更仍至少执行 Markdown/HTML/JavaScript 语法检查、可执行冒烟验证和 `git diff --check`。所有测试结果必须在交付说明中区分“通过”“未执行”和“环境阻塞”。
+当前仓库已经落地 TypeScript workspace。文档变更仍至少执行 `git diff --check`，涉及代码或配置时继续执行相关 TypeScript、构建和测试命令。所有测试结果必须在交付说明中区分“通过”“未执行”和“环境阻塞”。
 
 ## 12. 本地开发、构建与发布
 
@@ -674,7 +674,6 @@ HumanInk/
 │  ├─ humanink-core/
 │  ├─ humanink-harness/
 │  └─ humanink-client/
-├─ demo/
 ├─ tests/
 │  ├─ fixtures/
 │  └─ e2e/
@@ -777,7 +776,7 @@ ContentProject
 ### ADR-005：先命令/工具，后复杂工作台 UI
 
 - **决定**：先让 Core 流程和命令稳定，再把完整编辑器接入 Client UI。
-- **原因**：命令路径更容易做自动化、错误和取消验收；现有 Demo 可持续作为交互参考。
+- **原因**：命令路径更容易做自动化、错误和取消验收；正式 UI 在协议稳定后再接入，避免早期界面代码反向约束 Core。
 - **代价**：早期 UI 体验不是最终形态，需要通过 Adapter 保持协议稳定。
 
 ## 15. 实施顺序
@@ -787,7 +786,7 @@ ContentProject
 1. 建立 pnpm workspace、TypeScript ESM、统一脚本和 CI；
 2. 建立 `humanink-core` 的领域类型、错误类型和端口；
 3. 建立 Fake Provider、JSONL Repository 和 Core 合约测试；
-4. 将现有 Demo 的数据流抽象成可复用的 DTO，但不强行迁移 Demo。
+4. 定义命令输入、任务结果和内容版本 DTO，避免 UI 原型或宿主细节反向渗透到 Core。
 
 ### 阶段 B：MVP 文字闭环
 
@@ -831,6 +830,6 @@ ContentProject
 - LLM、Storage、Detection 的成功、失败、超时、取消和重试路径可测试；
 - 朱雀未配置或不可用时，文章仍能保存、编辑、恢复和导出；
 - 日志和导出物不包含凭据，外部提交有明确用户确认；
-- 正式 Client UI 不依赖 Harness 私有 DOM，现有 Demo 仍可独立打开；
+- 正式 Client UI 不依赖 Harness 私有 DOM，命令能力在无 UI 情况下仍可完整运行；
 - 搜图、AI 封面和平台适配可以在不修改核心版本不变量的前提下新增；
 - 每个实现任务遵守仓库 `AGENTS.md`：修改前检查 Git，完成后自测、更新版本、记录变更并提交 Git 版本。
