@@ -48,7 +48,7 @@ dsh --profile humanink web
 
 ```powershell
 npx --yes pnpm@11.7.0 pack
-dsh plugin --profile humanink add .\dsh-humanink-0.6.1.tgz
+dsh plugin --profile humanink add .\dsh-humanink-0.6.2.tgz
 ```
 
 当前 bundle 的默认配置由 Harness 标准 schema 提供：

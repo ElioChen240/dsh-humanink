@@ -1,4 +1,5 @@
-# HumanInk
+# dsh-humanink
+本仓库的可安装 Bundle 名称为 `dsh-humanink`，产品品牌仍为 **HumanInk**；用户命令继续使用 `/humanink-*`，以保持命令入口简洁和兼容。
 
 HumanInk 是面向中文自媒体创作者的通用内容工作台，也是一个 DeepSeek Harness 插件。它把标题、内容简报、大纲、初稿、人味化改写、发布前复核、任务查询/取消和 Markdown 导出串成一条本地可恢复的内容生产链路。
 
