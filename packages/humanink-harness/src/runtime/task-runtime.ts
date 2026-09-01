@@ -1,4 +1,5 @@
 export type TaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+export type TaskDurability = 'failed';
 
 export interface TaskRecord {
   readonly id: string;
@@ -11,7 +12,10 @@ export interface TaskRecord {
   readonly errorCode?: string;
   readonly safeMessage?: string;
   readonly startedAt?: string;
+  readonly cancellationRequested?: true;
+  readonly cancelRequestedAt?: string;
   readonly finishedAt?: string;
+  readonly durability?: TaskDurability;
 }
 
 export interface TaskStore {
@@ -38,6 +42,7 @@ export interface TaskRuntimeDependencies {
   readonly idFactory?: (prefix: string) => string;
   readonly clock?: () => Date;
   readonly store?: TaskStore;
+  readonly resolveCommittedVersionId?: (operationId: string) => string | null;
 }
 
 interface MutableTask {
@@ -53,7 +58,12 @@ interface MutableTask {
   errorCode?: string;
   safeMessage?: string;
   startedAt?: string;
+  cancellationRequested?: true;
+  cancelRequestedAt?: string;
   finishedAt?: string;
+  durability?: TaskDurability;
+  externalSignal?: AbortSignal;
+  externalAbortListener?: () => void;
 }
 
 interface TaskWaiter {
@@ -64,6 +74,27 @@ interface TaskWaiter {
 }
 
 const terminalStatuses: ReadonlySet<TaskStatus> = new Set(['succeeded', 'failed', 'cancelled']);
+
+const safeFailureMessages = Object.freeze({
+  LLM_TIMEOUT: '模型请求超时，请稍后重试',
+  LLM_INVALID_RESPONSE: '模型返回格式无效，请重试或调整输入',
+  LLM_PROVIDER_FAILED: '模型服务暂时不可用，请稍后重试',
+  HUMANIZE_PROTECTED_FIELD_VALIDATION_FAILED: '保护字段校验失败，请核对后重试',
+  HUMANINK_CAPABILITY_UNAVAILABLE: '当前 HumanInk 能力不可用，请检查配置',
+} as const);
+
+function safeFailure(error: unknown): { readonly errorCode: string; readonly safeMessage: string } {
+  if (error !== null && typeof error === 'object') {
+    const code = (error as { readonly code?: unknown }).code;
+    if (typeof code === 'string' && Object.hasOwn(safeFailureMessages, code)) {
+      return {
+        errorCode: code,
+        safeMessage: safeFailureMessages[code as keyof typeof safeFailureMessages],
+      };
+    }
+  }
+  return { errorCode: 'TASK_FAILED', safeMessage: '任务执行失败' };
+}
 
 function defaultIdFactory(prefix: string): string {
   return `${prefix}_${crypto.randomUUID()}`;
@@ -107,7 +138,10 @@ function snapshot(task: MutableTask): TaskRecord {
     ...(task.errorCode === undefined ? {} : { errorCode: task.errorCode }),
     ...(task.safeMessage === undefined ? {} : { safeMessage: task.safeMessage }),
     ...(task.startedAt === undefined ? {} : { startedAt: task.startedAt }),
+    ...(task.cancellationRequested === true ? { cancellationRequested: true as const } : {}),
+    ...(task.cancelRequestedAt === undefined ? {} : { cancelRequestedAt: task.cancelRequestedAt }),
     ...(task.finishedAt === undefined ? {} : { finishedAt: task.finishedAt }),
+    ...(task.durability === undefined ? {} : { durability: task.durability }),
   });
 }
 
@@ -125,7 +159,10 @@ function mutableFromRecord(record: TaskRecord): MutableTask {
     ...(record.errorCode === undefined ? {} : { errorCode: record.errorCode }),
     ...(record.safeMessage === undefined ? {} : { safeMessage: record.safeMessage }),
     ...(record.startedAt === undefined ? {} : { startedAt: record.startedAt }),
+    ...(record.cancellationRequested === true ? { cancellationRequested: true as const } : {}),
+    ...(record.cancelRequestedAt === undefined ? {} : { cancelRequestedAt: record.cancelRequestedAt }),
     ...(record.finishedAt === undefined ? {} : { finishedAt: record.finishedAt }),
+    ...(record.durability === undefined ? {} : { durability: record.durability }),
   };
 }
 
@@ -135,19 +172,18 @@ export class TaskRuntime {
   private readonly idFactory: (prefix: string) => string;
   private readonly clock: () => Date;
   private readonly store: TaskStore | undefined;
+  private readonly resolveCommittedVersionId: ((operationId: string) => string | null) | undefined;
 
   constructor(dependencies: TaskRuntimeDependencies = {}) {
     this.idFactory = dependencies.idFactory ?? defaultIdFactory;
     this.clock = dependencies.clock ?? defaultClock;
     this.store = dependencies.store;
+    this.resolveCommittedVersionId = dependencies.resolveCommittedVersionId;
     for (const record of this.store?.load() ?? []) {
       const restored = mutableFromRecord(record);
       if (!terminalStatuses.has(restored.status)) {
-        restored.status = 'failed';
-        restored.errorCode = 'TASK_INTERRUPTED';
-        restored.safeMessage = '任务因进程中断而失败，请重新执行';
-        restored.finishedAt = this.clock().toISOString();
-        this.store?.save(snapshot(restored));
+        this.recover(restored);
+        this.persist(restored);
       }
       this.tasks.set(restored.id, restored);
     }
@@ -165,17 +201,30 @@ export class TaskRuntime {
       status: 'queued',
     };
     this.tasks.set(id, task);
-    this.persist(task);
+
+    if (!this.persist(task)) {
+      this.failForStore(task);
+      return snapshot(task);
+    }
 
     if (input.signal !== undefined) {
       if (input.signal.aborted) {
         this.cancel(id);
       } else {
-        input.signal.addEventListener('abort', () => this.cancel(id), { once: true });
+        const listener = (): void => {
+          this.cancel(id);
+        };
+        task.externalSignal = input.signal;
+        task.externalAbortListener = listener;
+        input.signal.addEventListener('abort', listener, { once: true });
       }
     }
 
-    void Promise.resolve().then(() => this.execute(task));
+    if (task.status === 'queued') {
+      void Promise.resolve()
+        .then(() => this.execute(task))
+        .catch(() => this.handleBackgroundFailure(task));
+    }
     return snapshot(task);
   }
 
@@ -196,8 +245,22 @@ export class TaskRuntime {
     if (task === undefined || terminalStatuses.has(task.status)) {
       return false;
     }
+    if (task.cancellationRequested === true) {
+      return true;
+    }
+
+    task.cancellationRequested = true;
+    task.cancelRequestedAt = this.clock().toISOString();
+    if (task.status === 'queued') {
+      task.controller.abort();
+      this.finish(task, 'cancelled', 'TASK_CANCELLED', '任务已取消');
+      return true;
+    }
+
     task.controller.abort();
-    this.finish(task, 'cancelled', 'TASK_CANCELLED', '任务已取消');
+    if (!this.publish(task)) {
+      this.failForStore(task);
+    }
     return true;
   }
 
@@ -241,13 +304,54 @@ export class TaskRuntime {
     return task;
   }
 
+  private recover(task: MutableTask): void {
+    task.finishedAt = this.clock().toISOString();
+    if (task.contentVersionId === undefined) {
+      const recoveredVersionId = this.resolveCommittedVersionId?.(task.operationId) ?? null;
+      if (recoveredVersionId !== null) {
+        task.contentVersionId = recoveredVersionId;
+      }
+    }
+
+    if (task.result !== undefined) {
+      task.status = 'succeeded';
+      delete task.errorCode;
+      delete task.safeMessage;
+      return;
+    }
+    if (task.contentVersionId !== undefined) {
+      task.status = 'failed';
+      task.errorCode = 'TASK_RECOVERY_REQUIRED';
+      task.safeMessage = '内容已保存，但任务结果未完整持久化，请人工核对';
+      return;
+    }
+    if (task.cancellationRequested === true) {
+      task.status = 'cancelled';
+      task.errorCode = 'TASK_CANCELLED';
+      task.safeMessage = '任务已取消';
+      return;
+    }
+    task.status = 'failed';
+    task.errorCode = 'TASK_INTERRUPTED';
+    task.safeMessage = '任务因进程中断而失败，请重新执行';
+  }
+
   private async execute(task: MutableTask): Promise<void> {
     if (task.status !== 'queued') {
       return;
     }
+    if (task.controller.signal.aborted) {
+      this.finish(task, 'cancelled', 'TASK_CANCELLED', '任务已取消');
+      return;
+    }
+
     task.status = 'running';
     task.startedAt = this.clock().toISOString();
-    this.publish(task);
+    if (!this.publish(task)) {
+      task.controller.abort();
+      this.failForStore(task);
+      return;
+    }
 
     try {
       const result = await task.operation({
@@ -260,21 +364,29 @@ export class TaskRuntime {
           if (update.contentVersionId !== undefined) {
             task.contentVersionId = update.contentVersionId;
           }
-          this.publish(task);
+          if (!this.publish(task)) {
+            task.controller.abort();
+            this.failForStore(task);
+            throw new Error('TASK_STORE_FAILED');
+          }
         },
       });
-      if (task.controller.signal.aborted) {
-        this.finish(task, 'cancelled', 'TASK_CANCELLED', '任务已取消');
+      if (terminalStatuses.has(task.status)) {
         return;
       }
       task.result = result;
+      this.persist(task);
       this.finish(task, 'succeeded');
     } catch (error) {
-      if (task.controller.signal.aborted || isAbortError(error)) {
+      if (terminalStatuses.has(task.status)) {
+        return;
+      }
+      if (isAbortError(error)) {
         this.finish(task, 'cancelled', 'TASK_CANCELLED', '任务已取消');
         return;
       }
-      this.finish(task, 'failed', 'TASK_FAILED', '任务执行失败');
+      const failure = safeFailure(error);
+      this.finish(task, 'failed', failure.errorCode, failure.safeMessage);
     }
   }
 
@@ -289,13 +401,47 @@ export class TaskRuntime {
     }
     task.status = status;
     task.finishedAt = this.clock().toISOString();
-    if (errorCode !== undefined) {
-      task.errorCode = errorCode;
+    if (status === 'succeeded') {
+      delete task.errorCode;
+      delete task.safeMessage;
+    } else {
+      if (errorCode !== undefined) {
+        task.errorCode = errorCode;
+      }
+      if (safeMessage !== undefined) {
+        task.safeMessage = safeMessage;
+      }
     }
-    if (safeMessage !== undefined) {
-      task.safeMessage = safeMessage;
-    }
+    this.cleanupExternalSignal(task);
     this.publish(task);
+  }
+
+  private failForStore(task: MutableTask): void {
+    if (terminalStatuses.has(task.status)) {
+      return;
+    }
+    task.status = 'failed';
+    task.errorCode = 'TASK_STORE_FAILED';
+    task.safeMessage = '任务状态保存失败，请重新执行';
+    task.finishedAt = this.clock().toISOString();
+    task.durability = 'failed';
+    this.cleanupExternalSignal(task);
+    this.notify(task);
+  }
+
+  private handleBackgroundFailure(task: MutableTask): void {
+    if (terminalStatuses.has(task.status)) {
+      return;
+    }
+    this.finish(task, 'failed', 'TASK_FAILED', '任务执行失败');
+  }
+
+  private cleanupExternalSignal(task: MutableTask): void {
+    if (task.externalSignal !== undefined && task.externalAbortListener !== undefined) {
+      task.externalSignal.removeEventListener('abort', task.externalAbortListener);
+      delete task.externalSignal;
+      delete task.externalAbortListener;
+    }
   }
 
   private addWaiter(taskId: string, waiter: TaskWaiter): void {
@@ -304,13 +450,25 @@ export class TaskRuntime {
     this.waiters.set(taskId, waiters);
   }
 
-  private persist(task: MutableTask): void {
-    this.store?.save(snapshot(task));
+  private persist(task: MutableTask): boolean {
+    if (this.store === undefined) {
+      delete task.durability;
+      return true;
+    }
+    delete task.durability;
+    try {
+      this.store.save(snapshot(task));
+      return true;
+    } catch {
+      task.durability = 'failed';
+      return false;
+    }
   }
 
-  private publish(task: MutableTask): void {
-    this.persist(task);
+  private publish(task: MutableTask): boolean {
+    const persisted = this.persist(task);
     this.notify(task);
+    return persisted;
   }
 
   private notify(task: MutableTask): void {

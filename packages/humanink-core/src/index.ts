@@ -1,4 +1,7 @@
 export * from './humanize/analyze-chinese-template.js';
+export * from './humanize/humanize-rewrite.js';
+export * from './diff/index.js';
+export * from './review/index.js';
 export * from './project/index.js';
 export * from './repository/index.js';
 export * from './shared/index.js';

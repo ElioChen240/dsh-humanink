@@ -12,9 +12,11 @@ import {
   parseBriefGenerationInput,
   parseCreateProjectInput,
   parseDraftGenerationInput,
+  parseHumanizeRewriteInput,
   parseIdentifier,
   parseJsonObject,
   parseOutlineGenerationInput,
+  parseReviewInput,
   parseTitleGenerationInput,
 } from './input.js';
 
@@ -150,6 +152,28 @@ function commandDefinitions(application: HumanInkCommandApplication): readonly H
         ));
       },
     }),
+    jsonCommand({
+      name: 'humanink-humanize',
+      description: '对指定内容版本进行自然、具体且保留事实的人味化改写。',
+      input: { hint: '{"projectId":"...","versionId":"...","direction":"更自然具体"}' },
+      handler(input, invocation) {
+        return generationResult(application.humanizeContent(
+          parseHumanizeRewriteInput(input),
+          invocation.signal,
+        ));
+      },
+    }),
+    jsonCommand({
+      name: 'humanink-review',
+      description: '对指定文章版本执行发布前复核并生成结构化问题清单。',
+      input: { hint: '{"projectId":"...","versionId":"..."}' },
+      handler(input, invocation) {
+        return generationResult(application.reviewContent(
+          parseReviewInput(input),
+          invocation.signal,
+        ));
+      },
+    }),
     guardedCommand({
       name: 'humanink-task',
       description: '查询 HumanInk 任务快照。',
@@ -167,7 +191,10 @@ function commandDefinitions(application: HumanInkCommandApplication): readonly H
         if (!application.cancelTask(taskId)) {
           throw new CommandInputError('TASK_NOT_CANCELLABLE', '任务不存在或已经结束，无法取消。');
         }
-        return successJson(requireTask(application, taskId));
+        return successJson({
+          ...requireTask(application, taskId),
+          cancelAccepted: true,
+        });
       },
     }),
     guardedCommand({

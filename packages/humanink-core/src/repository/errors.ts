@@ -59,3 +59,24 @@ export class CurrentVersionNotFoundError extends Error {
     this.versionId = versionId;
   }
 }
+
+export class AtomicCommitValidationError extends Error {
+  constructor(message = 'Atomic content commit validation failed') {
+    super(message);
+    this.name = 'AtomicCommitValidationError';
+  }
+}
+
+export class AtomicCommitNotSupportedError extends Error {
+  constructor() {
+    super('Content repository does not support atomic version and project commits');
+    this.name = 'AtomicCommitNotSupportedError';
+  }
+}
+
+export class RepositoryRecoveryRequiredError extends Error {
+  constructor() {
+    super('Content repository requires recovery before accepting more mutations');
+    this.name = 'RepositoryRecoveryRequiredError';
+  }
+}

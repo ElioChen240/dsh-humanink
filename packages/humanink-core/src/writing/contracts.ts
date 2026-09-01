@@ -35,7 +35,9 @@ export function resolveSignal(signal?: AbortSignal): AbortSignal {
 
 export function abortIfNeeded(signal: AbortSignal): void {
   if (signal.aborted) {
-    throw new Error('Writing operation cancelled');
+    const error = new Error('Writing operation cancelled');
+    error.name = 'AbortError';
+    throw error;
   }
 }
 

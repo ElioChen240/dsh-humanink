@@ -234,7 +234,7 @@ describe('writing core use cases', () => {
     await expect(cancelledUseCase.execute({
       projectId: cancelled.project.id,
       briefVersionId: cancelled.sourceVersion.id,
-    }, { signal: controller.signal })).rejects.toThrow();
+    }, { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
     expect(await cancelled.repository.listVersions(cancelled.project.id)).toHaveLength(1);
   });
 
@@ -255,7 +255,7 @@ describe('writing core use cases', () => {
     await expect(useCase.execute({
       projectId: project.id,
       sourceVersionId: sourceVersion.id,
-    }, { signal: controller.signal })).rejects.toThrow();
+    }, { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
     expect(await repository.listVersions(project.id)).toHaveLength(1);
   });
 

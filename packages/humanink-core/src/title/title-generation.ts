@@ -66,7 +66,9 @@ const systemPrompt = [
 
 function abortIfNeeded(signal: AbortSignal): void {
   if (signal.aborted) {
-    throw new Error('标题生成已取消');
+    const error = new Error('标题生成已取消');
+    error.name = 'AbortError';
+    throw error;
   }
 }
 

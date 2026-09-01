@@ -1,4 +1,4 @@
-﻿import { cloneAndFreeze } from '../shared/immutability.js';
+import { cloneAndFreeze } from '../shared/immutability.js';
 import { resolveClock, resolveIdFactory, type FactoryDependencies } from '../shared/factories.js';
 import type { JsonObject } from '../shared/types.js';
 
@@ -74,6 +74,7 @@ export interface CreateProjectWithSourceRequest {
   readonly source: import('../versioning/content-version.js').TextContentInput;
   readonly creatorProfileId?: string;
   readonly metadata?: JsonObject;
+  readonly operationId?: string;
 }
 
 export interface CreateDerivedVersionRequest {
@@ -89,4 +90,5 @@ export interface CreateDerivedVersionRequest {
   readonly promptTemplateVersion?: string;
   readonly modelInfo?: JsonObject;
   readonly userConfirmed?: boolean;
+  readonly operationId?: string;
 }

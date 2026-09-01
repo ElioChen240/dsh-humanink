@@ -35,6 +35,8 @@ export type HumanInkCommandApplication = Pick<
   | 'generateBrief'
   | 'generateOutline'
   | 'generateDraft'
+  | 'humanizeContent'
+  | 'reviewContent'
   | 'getTask'
   | 'cancelTask'
   | 'exportVersion'

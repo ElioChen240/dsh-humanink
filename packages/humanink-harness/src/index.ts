@@ -4,3 +4,4 @@ export * from './runtime/humanink-application.js';
 export * from './runtime/task-runtime.js';
 export * from './services/file-task-store.js';
 export * from './services/llm-provider.js';
+export * from './services/resilient-llm-provider.js';

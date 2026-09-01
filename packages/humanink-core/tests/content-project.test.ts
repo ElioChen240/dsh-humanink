@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { CommitVersionAndProjectInput, ContentRepository } from '../src/repository/content-repository.js';
 import type { ContentVersion } from '../src/versioning/content-version.js';
 import {
   ContentProjectService,
@@ -30,11 +31,49 @@ function createService() {
 }
 
 class FailingSourceRepository extends InMemoryContentRepository {
-  override async saveVersion(version: ContentVersion): Promise<void> {
-    if (version.kind === 'source') {
+  override async commitVersionAndProject(
+    input: CommitVersionAndProjectInput,
+  ): Promise<import('../src/project/content-project.js').ContentProject> {
+    if (input.version.kind === 'source') {
       throw new Error('source persistence failed');
     }
+    return super.commitVersionAndProject(input);
+  }
+}
+
+class LegacyRuntimeRepository implements ContentRepository {
+  constructor(private readonly backing: InMemoryContentRepository) {}
+
+  createProject: ContentRepository['createProject'] = (input) => this.backing.createProject(input);
+  getProject: ContentRepository['getProject'] = (projectId) => this.backing.getProject(projectId);
+  updateProject: ContentRepository['updateProject'] = (project) => this.backing.updateProject(project);
+  saveVersion: ContentRepository['saveVersion'] = (version) => this.backing.saveVersion(version);
+  getVersion: ContentRepository['getVersion'] = (versionId) => this.backing.getVersion(versionId);
+  listVersions: ContentRepository['listVersions'] = (projectId) => this.backing.listVersions(projectId);
+}
+
+class AtomicTrackingRepository extends InMemoryContentRepository {
+  atomicCommitCalls = 0;
+  legacyVersionWrites = 0;
+  legacyProjectUpdates = 0;
+
+  override async commitVersionAndProject(
+    input: CommitVersionAndProjectInput,
+  ): Promise<import('../src/project/content-project.js').ContentProject> {
+    this.atomicCommitCalls += 1;
+    return super.commitVersionAndProject(input);
+  }
+
+  override async saveVersion(version: ContentVersion): Promise<void> {
+    this.legacyVersionWrites += 1;
     await super.saveVersion(version);
+  }
+
+  override async updateProject(
+    project: import('../src/project/content-project.js').ContentProject,
+  ): Promise<import('../src/project/content-project.js').ContentProject> {
+    this.legacyProjectUpdates += 1;
+    return super.updateProject(project);
   }
 }
 describe('content project versioning', () => {
@@ -65,11 +104,61 @@ describe('content project versioning', () => {
       source: sourceInput,
     })).rejects.toThrow('source persistence failed');
 
-    const project = await repository.getProject('project_1');
-    expect(project).not.toBeNull();
-    expect(project?.currentVersionId).toBeUndefined();
+    expect(await repository.getProject('project_1')).toBeNull();
     expect(await repository.getVersion('version_2')).toBeNull();
   });
+  it('keeps repositories without the optional atomic capability runtime-compatible', async () => {
+    let idSequence = 0;
+    const backing = new InMemoryContentRepository();
+    const repository = new LegacyRuntimeRepository(backing);
+    const service = new ContentProjectService(repository, {
+      idFactory: (prefix: string) => `${prefix}_${++idSequence}`,
+      clock: () => new Date(`2026-09-01T00:00:0${idSequence}.000Z`),
+    });
+
+    const created = await service.createProject({ title: 'Legacy project', source: sourceInput });
+    const derived = await service.createDerivedVersion({
+      projectId: created.project.id,
+      parentVersionId: created.sourceVersion.id,
+      kind: 'draft',
+      content: { title: 'Legacy draft', body: 'Written through the legacy repository flow.' },
+      createdBy: 'llm',
+    });
+    const restored = await service.restoreVersion({
+      projectId: created.project.id,
+      versionId: derived.id,
+    });
+
+    expect((await backing.getProject(created.project.id))?.currentVersionId).toBe(restored.id);
+    expect(await backing.listVersions(created.project.id)).toHaveLength(3);
+  });
+
+  it('uses the atomic repository capability for source, derived, and restored versions', async () => {
+    let idSequence = 0;
+    const repository = new AtomicTrackingRepository();
+    const service = new ContentProjectService(repository, {
+      idFactory: (prefix: string) => `${prefix}_${++idSequence}`,
+      clock: () => new Date('2026-09-01T00:00:00.000Z'),
+    });
+
+    const created = await service.createProject({ title: 'Atomic project', source: sourceInput });
+    const derived = await service.createDerivedVersion({
+      projectId: created.project.id,
+      parentVersionId: created.sourceVersion.id,
+      kind: 'draft',
+      content: { title: 'Draft', body: 'Derived body.' },
+      createdBy: 'llm',
+    });
+    await service.restoreVersion({
+      projectId: created.project.id,
+      versionId: derived.id,
+    });
+
+    expect(repository.atomicCommitCalls).toBe(3);
+    expect(repository.legacyVersionWrites).toBe(0);
+    expect(repository.legacyProjectUpdates).toBe(0);
+  });
+
   it('derives a new version without changing the parent version', async () => {
     const { repository, service } = createService();
     const { project, sourceVersion } = await service.createProject({

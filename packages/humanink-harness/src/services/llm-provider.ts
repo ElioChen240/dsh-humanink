@@ -33,12 +33,16 @@ export interface HarnessStreamChunk {
   };
   readonly reason?: {
     readonly kind?: string;
-    readonly failure?: {
-      readonly code?: string;
-      readonly message?: string;
-      readonly requestId?: string;
-    };
+    readonly failure?: HarnessLlmFailure;
   };
+}
+
+export interface HarnessLlmFailure {
+  readonly code?: string;
+  readonly message?: string;
+  readonly requestId?: string;
+  readonly status?: number | string;
+  readonly retryable?: boolean;
 }
 
 export interface HarnessLlmServiceLike {
@@ -52,6 +56,62 @@ export interface HarnessLlmProviderOptions {
   readonly maxTokens?: number;
 }
 
+export class HarnessLlmFailureError extends Error {
+  override readonly name = 'HarnessLlmFailureError';
+  readonly code?: string;
+  readonly requestId?: string;
+  readonly status?: number | string;
+  readonly retryable?: boolean;
+
+  constructor(failure?: HarnessLlmFailure) {
+    super('Harness LLM request failed.');
+    const code = failure?.code?.trim();
+    const requestId = failure?.requestId?.trim();
+    if (code !== undefined && code.length > 0) {
+      this.code = code;
+    }
+    if (requestId !== undefined && requestId.length > 0) {
+      this.requestId = requestId;
+    }
+    if (failure?.status !== undefined) {
+      this.status = failure.status;
+    }
+    if (failure?.retryable !== undefined) {
+      this.retryable = failure.retryable;
+    }
+  }
+}
+
+function requireOptionText(value: string, field: string): string {
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    throw new TypeError(`${field} must not be empty`);
+  }
+  return normalized;
+}
+
+function validateProviderOptions(options: HarnessLlmProviderOptions): HarnessLlmProviderOptions {
+  if (
+    options.temperature !== undefined
+    && (!Number.isFinite(options.temperature) || options.temperature < 0)
+  ) {
+    throw new TypeError('temperature must be a non-negative finite number');
+  }
+  if (
+    options.maxTokens !== undefined
+    && (!Number.isInteger(options.maxTokens) || options.maxTokens <= 0)
+  ) {
+    throw new TypeError('maxTokens must be a positive integer');
+  }
+
+  return {
+    provider: requireOptionText(options.provider, 'provider'),
+    ...(options.model === undefined ? {} : { model: requireOptionText(options.model, 'model') }),
+    ...(options.temperature === undefined ? {} : { temperature: options.temperature }),
+    ...(options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens }),
+  };
+}
+
 function abortError(): DOMException {
   return new DOMException('The LLM request was aborted.', 'AbortError');
 }
@@ -63,12 +123,16 @@ function assertNotAborted(signal: AbortSignal): void {
 }
 
 function createRequestMessage(request: LlmRequest): HarnessMessageLike {
+  const attemptId = `humanink_${crypto.randomUUID()}`;
+  const operationId = request.operationId?.trim();
   return {
-    id: `humanink_${crypto.randomUUID()}`,
+    id: attemptId,
     role: 'user',
     content: [{
       type: 'text',
       text: JSON.stringify({
+        ...(operationId === undefined || operationId.length === 0 ? {} : { operationId }),
+        attemptId,
         task: request.task,
         promptTemplateVersion: request.promptTemplateVersion,
         input: request.input,
@@ -101,15 +165,18 @@ function errorForFinish(chunk: HarnessStreamChunk): Error | undefined {
   if (kind !== 'error') {
     return undefined;
   }
-  const message = chunk.reason?.failure?.message ?? 'Harness LLM request failed';
-  return new Error(message);
+  return new HarnessLlmFailureError(chunk.reason?.failure);
 }
 
 export class HarnessLlmProvider implements LlmProvider {
+  private readonly options: HarnessLlmProviderOptions;
+
   constructor(
     private readonly service: HarnessLlmServiceLike,
-    private readonly options: HarnessLlmProviderOptions,
-  ) {}
+    options: HarnessLlmProviderOptions,
+  ) {
+    this.options = validateProviderOptions(options);
+  }
 
   async generate<T>(request: LlmRequest): Promise<LlmResponse<T>> {
     assertNotAborted(request.signal);

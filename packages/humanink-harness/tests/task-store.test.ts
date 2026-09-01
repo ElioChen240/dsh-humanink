@@ -46,25 +46,103 @@ describe('FileTaskStore', () => {
     expect(Object.isFrozen(restarted.get(task.id))).toBe(true);
   });
 
-  it('marks an interrupted queued or running task as failed during recovery', () => {
+  it('persists the cancelling snapshot and cancellation timestamp', async () => {
     const root = createRoot();
     const store = new FileTaskStore(root);
-    const interrupted: TaskRecord = {
-      id: 'task_interrupted',
-      operationId: 'op_interrupted',
-      projectId: 'project_1',
-      type: 'outline',
+    const runtime = new TaskRuntime({
+      idFactory: (prefix) => `${prefix}_cancelling`,
+      clock: () => new Date('2026-09-01T01:00:30.000Z'),
+      store,
+    });
+    let releaseOperation: (() => void) | undefined;
+    const operationRelease = new Promise<void>((resolve) => {
+      releaseOperation = resolve;
+    });
+
+    const task = runtime.start(
+      { projectId: 'project_1', type: 'review' },
+      async ({ signal }) => {
+        await operationRelease;
+        if (signal.aborted) {
+          throw new DOMException('The operation was aborted.', 'AbortError');
+        }
+      },
+    );
+    await runtime.waitForStatus(task.id, 'running');
+
+    expect(runtime.cancel(task.id)).toBe(true);
+    expect(runtime.cancel(task.id)).toBe(true);
+
+    const records = readFileSync(join(root, 'tasks.jsonl'), 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as TaskRecord);
+    expect(records.at(-1)).toMatchObject({
+      id: task.id,
       status: 'running',
-      startedAt: '2026-09-01T00:59:00.000Z',
-    };
-    store.save(interrupted);
+      cancellationRequested: true,
+      cancelRequestedAt: '2026-09-01T01:00:30.000Z',
+    });
+
+    releaseOperation?.();
+    await expect(runtime.waitForTerminal(task.id)).resolves.toMatchObject({ status: 'cancelled' });
+  });
+  it('recovers cancelling, committed, and interrupted non-terminal tasks deterministically', () => {
+    const root = createRoot();
+    const store = new FileTaskStore(root);
+    const records: readonly TaskRecord[] = [
+      {
+        id: 'task_cancelling',
+        operationId: 'op_cancelling',
+        projectId: 'project_1',
+        type: 'draft',
+        status: 'running',
+        cancellationRequested: true,
+        cancelRequestedAt: '2026-09-01T00:58:00.000Z',
+        startedAt: '2026-09-01T00:57:00.000Z',
+      },
+      {
+        id: 'task_committed',
+        operationId: 'op_committed',
+        projectId: 'project_1',
+        type: 'humanize',
+        status: 'running',
+        contentVersionId: 'version_committed',
+        result: { contentVersionId: 'version_committed', payload: 'durable' },
+        startedAt: '2026-09-01T00:59:00.000Z',
+      },
+      {
+        id: 'task_interrupted',
+        operationId: 'op_interrupted',
+        projectId: 'project_1',
+        type: 'outline',
+        status: 'queued',
+      },
+    ];
+    for (const record of records) {
+      store.save(record);
+    }
 
     const runtime = new TaskRuntime({
       store,
       clock: () => new Date('2026-09-01T01:01:00.000Z'),
     });
 
-    expect(runtime.get(interrupted.id)).toMatchObject({
+    expect(runtime.get('task_cancelling')).toMatchObject({
+      status: 'cancelled',
+      cancellationRequested: true,
+      errorCode: 'TASK_CANCELLED',
+      safeMessage: '任务已取消',
+      cancelRequestedAt: '2026-09-01T00:58:00.000Z',
+      finishedAt: '2026-09-01T01:01:00.000Z',
+    });
+    expect(runtime.get('task_committed')).toMatchObject({
+      status: 'succeeded',
+      contentVersionId: 'version_committed',
+      result: { contentVersionId: 'version_committed', payload: 'durable' },
+      finishedAt: '2026-09-01T01:01:00.000Z',
+    });
+    expect(runtime.get('task_interrupted')).toMatchObject({
       status: 'failed',
       errorCode: 'TASK_INTERRUPTED',
       safeMessage: '任务因进程中断而失败，请重新执行',

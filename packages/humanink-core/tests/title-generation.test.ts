@@ -233,7 +233,10 @@ describe('title generation use case', () => {
     await expect(useCase.execute(
       { projectId: project.id, sourceVersionId: sourceVersion.id },
       { signal: controller.signal },
-    )).rejects.toThrow('标题生成已取消');
+    )).rejects.toMatchObject({
+      name: 'AbortError',
+      message: '标题生成已取消',
+    });
     expect(await repository.listVersions(project.id)).toHaveLength(1);
   });
   it('does not save more candidates than requested', async () => {

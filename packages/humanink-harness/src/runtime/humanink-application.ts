@@ -7,8 +7,12 @@ import type {
   ContentVersion,
   DraftGenerationInput,
   DraftGenerationUseCase,
+  HumanizeRewriteInput,
+  HumanizeRewriteUseCase,
   OutlineGenerationInput,
   OutlineGenerationUseCase,
+  ReviewInput,
+  ReviewUseCase,
   TitleGenerationInput,
   TitleGenerationUseCase,
   CreateProjectWithSourceRequest,
@@ -23,6 +27,19 @@ export interface HumanInkApplicationDependencies {
   readonly briefUseCase: Pick<BriefGenerationUseCase, 'execute'>;
   readonly outlineUseCase: Pick<OutlineGenerationUseCase, 'execute'>;
   readonly draftUseCase: Pick<DraftGenerationUseCase, 'execute'>;
+  readonly humanizeUseCase?: Pick<HumanizeRewriteUseCase, 'execute'>;
+  readonly reviewUseCase?: Pick<ReviewUseCase, 'execute'>;
+}
+
+export type HumanInkCapability = 'humanize' | 'review';
+
+export class HumanInkCapabilityUnavailableError extends Error {
+  override readonly name = 'HumanInkCapabilityUnavailableError';
+  readonly code = 'HUMANINK_CAPABILITY_UNAVAILABLE';
+
+  constructor(readonly capability: HumanInkCapability) {
+    super(`HumanInk capability is unavailable: ${capability}.`);
+  }
 }
 
 export interface ProjectCreationResult {
@@ -92,6 +109,44 @@ export class HumanInkApplication {
       { projectId: input.projectId, type: 'draft', ...(signal === undefined ? {} : { signal }) },
       async ({ signal: taskSignal, operationId, update }) => {
         const result = await this.dependencies.draftUseCase.execute(input, {
+          signal: taskSignal,
+          operationId,
+        });
+        update({ contentVersionId: result.version.id });
+        return result;
+      },
+    );
+  }
+
+  humanizeContent(input: HumanizeRewriteInput, signal?: AbortSignal): TaskRecord {
+    const humanizeUseCase = this.dependencies.humanizeUseCase;
+    if (humanizeUseCase === undefined) {
+      throw new HumanInkCapabilityUnavailableError('humanize');
+    }
+
+    return this.dependencies.taskRuntime.start(
+      { projectId: input.projectId, type: 'humanize', ...(signal === undefined ? {} : { signal }) },
+      async ({ signal: taskSignal, operationId, update }) => {
+        const result = await humanizeUseCase.execute(input, {
+          signal: taskSignal,
+          operationId,
+        });
+        update({ contentVersionId: result.version.id });
+        return result;
+      },
+    );
+  }
+
+  reviewContent(input: ReviewInput, signal?: AbortSignal): TaskRecord {
+    const reviewUseCase = this.dependencies.reviewUseCase;
+    if (reviewUseCase === undefined) {
+      throw new HumanInkCapabilityUnavailableError('review');
+    }
+
+    return this.dependencies.taskRuntime.start(
+      { projectId: input.projectId, type: 'review', ...(signal === undefined ? {} : { signal }) },
+      async ({ signal: taskSignal, operationId, update }) => {
+        const result = await reviewUseCase.execute(input, {
           signal: taskSignal,
           operationId,
         });

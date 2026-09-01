@@ -1,6 +1,6 @@
 {
   "name": "@humanink/harness",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -11,8 +11,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "test": "pnpm --filter @humanink/core build && pnpm --filter @humanink/storage build && vitest run",
+    "typecheck": "pnpm --filter @humanink/core build && pnpm --filter @humanink/storage build && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@humanink/core": "workspace:*",

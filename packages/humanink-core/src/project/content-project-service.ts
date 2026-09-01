@@ -15,8 +15,15 @@ import {
   type RestoreContentVersionInput,
 } from '../versioning/content-version.js';
 import type { FactoryDependencies } from '../shared/factories.js';
-import type { ContentRepository } from '../repository/content-repository.js';
-import { ParentVersionNotFoundError, ProjectNotFoundError, ProjectVersionMismatchError } from '../repository/errors.js';
+import type {
+  CommitVersionAndProjectInput,
+  ContentRepository,
+} from '../repository/content-repository.js';
+import {
+  ParentVersionNotFoundError,
+  ProjectNotFoundError,
+  ProjectVersionMismatchError,
+} from '../repository/errors.js';
 
 export interface CreatedProject {
   readonly project: ContentProject;
@@ -43,15 +50,19 @@ export class ContentProjectService {
       userConfirmed: true,
     };
     const sourceVersion = createContentVersion(sourceInput, this.dependencies);
-    const createdProject = await this.repository.createProject(projectWithoutVersion);
-    await this.repository.saveVersion(sourceVersion);
-    const project = updateContentProjectCurrentVersion(
-      createdProject,
+    const initializedProject = updateContentProjectCurrentVersion(
+      projectWithoutVersion,
       sourceVersion.id,
       sourceVersion.createdAt,
     );
-    const initializedProject = await this.repository.updateProject(project);
-    return { project: initializedProject, sourceVersion };
+    const project = await this.commitVersionAndProject({
+      mode: 'create',
+      version: sourceVersion,
+      project: initializedProject,
+      expectedCurrentVersionId: null,
+      ...(input.operationId === undefined ? {} : { operationId: input.operationId }),
+    });
+    return { project, sourceVersion };
   }
 
   async createDerivedVersion(input: CreateDerivedVersionRequest): Promise<ContentVersion> {
@@ -71,8 +82,13 @@ export class ContentProjectService {
       ...(input.userConfirmed === undefined ? {} : { userConfirmed: input.userConfirmed }),
     };
     const derived = deriveContentVersion(parent, derivedInput, this.dependencies);
-    await this.repository.saveVersion(derived);
-    await this.advanceCurrentVersion(project, derived);
+    await this.commitVersionAndProject({
+      mode: 'update',
+      version: derived,
+      project: updateContentProjectCurrentVersion(project, derived.id, derived.createdAt),
+      expectedCurrentVersionId: project.currentVersionId ?? null,
+      ...(input.operationId === undefined ? {} : { operationId: input.operationId }),
+    });
     return derived;
   }
 
@@ -82,6 +98,7 @@ export class ContentProjectService {
     readonly createdBy?: RestoreContentVersionInput['createdBy'];
     readonly id?: string;
     readonly createdAt?: Date;
+    readonly operationId?: string;
   }): Promise<ContentVersion> {
     const project = await this.requireProject(input.projectId);
     const parent = await this.repository.getVersion(input.versionId);
@@ -92,8 +109,13 @@ export class ContentProjectService {
       ...(input.createdAt === undefined ? {} : { createdAt: input.createdAt }),
     };
     const restored = restoreContentVersion(parent, restoreInput, this.dependencies);
-    await this.repository.saveVersion(restored);
-    await this.advanceCurrentVersion(project, restored);
+    await this.commitVersionAndProject({
+      mode: 'update',
+      version: restored,
+      project: updateContentProjectCurrentVersion(project, restored.id, restored.createdAt),
+      expectedCurrentVersionId: project.currentVersionId ?? null,
+      ...(input.operationId === undefined ? {} : { operationId: input.operationId }),
+    });
     return restored;
   }
 
@@ -118,7 +140,25 @@ export class ContentProjectService {
     }
   }
 
-  private async advanceCurrentVersion(project: ContentProject, version: ContentVersion): Promise<void> {
-    await this.repository.updateProject(updateContentProjectCurrentVersion(project, version.id, version.createdAt));
+  private async commitVersionAndProject(
+    input: CommitVersionAndProjectInput,
+  ): Promise<ContentProject> {
+    const commit = this.repository.commitVersionAndProject;
+    if (commit !== undefined) {
+      return commit.call(this.repository, input);
+    }
+
+    // Backward-compatible fallback for repositories implemented before atomic commits existed.
+    // It intentionally preserves the legacy create/save/update ordering and guarantees no
+    // stronger atomicity than that older repository contract.
+    if (input.mode === 'create') {
+      const { currentVersionId: _currentVersionId, ...projectWithoutVersion } = input.project;
+      await this.repository.createProject(projectWithoutVersion);
+      await this.repository.saveVersion(input.version);
+      return this.repository.updateProject(input.project);
+    }
+
+    await this.repository.saveVersion(input.version);
+    return this.repository.updateProject(input.project);
   }
 }

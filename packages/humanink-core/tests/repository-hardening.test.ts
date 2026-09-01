@@ -107,6 +107,126 @@ describe('InMemoryContentRepository hardening', () => {
       currentVersionId: 'version_owner',
     })).rejects.toBeInstanceOf(ProjectVersionMismatchError);
   });
+  it('validates an atomic version and project commit before exposing either change', async () => {
+    const repository = new InMemoryContentRepository();
+    const project = await repository.createProject({ id: 'project_atomic', title: 'Atomic project' });
+    const source = makeVersion({ id: 'version_atomic_source', projectId: project.id });
+    await repository.saveVersion(source);
+    const initializedProject = await repository.updateProject({
+      ...project,
+      currentVersionId: source.id,
+      updatedAt: new Date('2026-08-31T00:01:00.000Z'),
+    });
+    const derived = makeVersion({
+      id: 'version_atomic_derived',
+      projectId: project.id,
+      parentVersionId: 'version_missing',
+      kind: 'draft',
+    });
+
+    await expect(repository.commitVersionAndProject({
+      mode: 'update',
+      version: derived,
+      project: {
+        ...initializedProject,
+        currentVersionId: derived.id,
+        updatedAt: new Date('2026-08-31T00:02:00.000Z'),
+      },
+    })).rejects.toBeInstanceOf(ParentVersionNotFoundError);
+
+    expect(await repository.getVersion(derived.id)).toBeNull();
+    expect(await repository.getProject(project.id)).toEqual(initializedProject);
+    expect(await repository.listVersions(project.id)).toHaveLength(1);
+  });
+
+  it('indexes an atomic commit by operationId without changing the public version record', async () => {
+    const repository = new InMemoryContentRepository();
+    const project = await repository.createProject({ id: 'project_operation', title: 'Operation project' });
+    const source = makeVersion({ id: 'version_operation_source', projectId: project.id });
+    await repository.saveVersion(source);
+    const initializedProject = await repository.updateProject({
+      ...project,
+      currentVersionId: source.id,
+      updatedAt: new Date('2026-08-31T00:01:00.000Z'),
+    });
+    const derived = makeVersion({
+      id: 'version_operation_derived',
+      projectId: project.id,
+      parentVersionId: source.id,
+      kind: 'draft',
+      createdAt: new Date('2026-08-31T00:02:00.000Z'),
+    });
+
+    expect(repository.findCommittedVersionByOperationId('operation_1')).toBeNull();
+    await repository.commitVersionAndProject({
+      mode: 'update',
+      operationId: 'operation_1',
+      expectedCurrentVersionId: source.id,
+      version: derived,
+      project: {
+        ...initializedProject,
+        currentVersionId: derived.id,
+        updatedAt: derived.createdAt,
+      },
+    });
+
+    const committed = repository.findCommittedVersionByOperationId('operation_1');
+    expect(committed).toEqual(derived);
+    expect(committed).not.toBe(derived);
+    expect(committed).not.toHaveProperty('operationId');
+  });
+
+  it('rejects stale atomic project advancement and operationId reuse', async () => {
+    const repository = new InMemoryContentRepository();
+    const project = await repository.createProject({ id: 'project_compare_and_set', title: 'CAS project' });
+    const source = makeVersion({ id: 'version_compare_source', projectId: project.id });
+    await repository.saveVersion(source);
+    const initializedProject = await repository.updateProject({
+      ...project,
+      currentVersionId: source.id,
+      updatedAt: new Date('2026-08-31T00:01:00.000Z'),
+    });
+    const first = makeVersion({
+      id: 'version_compare_first',
+      projectId: project.id,
+      parentVersionId: source.id,
+      kind: 'draft',
+      createdAt: new Date('2026-08-31T00:02:00.000Z'),
+    });
+    await repository.commitVersionAndProject({
+      mode: 'update',
+      operationId: 'operation_compare',
+      expectedCurrentVersionId: source.id,
+      version: first,
+      project: { ...initializedProject, currentVersionId: first.id, updatedAt: first.createdAt },
+    });
+
+    const stale = makeVersion({
+      id: 'version_compare_stale',
+      projectId: project.id,
+      parentVersionId: source.id,
+      kind: 'draft',
+      createdAt: new Date('2026-08-31T00:03:00.000Z'),
+    });
+    await expect(repository.commitVersionAndProject({
+      mode: 'update',
+      operationId: 'operation_stale',
+      expectedCurrentVersionId: source.id,
+      version: stale,
+      project: { ...initializedProject, currentVersionId: stale.id, updatedAt: stale.createdAt },
+    })).rejects.toThrow('current version changed');
+    await expect(repository.commitVersionAndProject({
+      mode: 'update',
+      operationId: 'operation_compare',
+      expectedCurrentVersionId: first.id,
+      version: stale,
+      project: { ...initializedProject, currentVersionId: stale.id, updatedAt: stale.createdAt },
+    })).rejects.toThrow('operationId');
+
+    expect(await repository.getVersion(stale.id)).toBeNull();
+    expect((await repository.getProject(project.id))?.currentVersionId).toBe(first.id);
+  });
+
   it('returns an isolated immutable version list snapshot', async () => {
     const repository = new InMemoryContentRepository();
     const project = await repository.createProject({ id: 'project_list', title: 'List project' });

@@ -2,7 +2,9 @@ import type {
   BriefGenerationInput,
   CreateProjectWithSourceRequest,
   DraftGenerationInput,
+  HumanizeRewriteInput,
   OutlineGenerationInput,
+  ReviewInput,
   TitleGenerationInput,
 } from '@humanink/core';
 
@@ -225,6 +227,40 @@ export function parseDraftGenerationInput(object: Record<string, unknown>): Draf
     outlineVersionId: requiredString(object, 'outlineVersionId'),
     ...(tone === undefined ? {} : { tone }),
     ...(length === undefined ? {} : { length }),
+    ...writingMetadata(object),
+  };
+}
+
+export function parseHumanizeRewriteInput(object: Record<string, unknown>): HumanizeRewriteInput {
+  assertKnownKeys(object, [
+    'projectId',
+    'versionId',
+    'direction',
+    'protectedFields',
+    'sourceRefs',
+  ]);
+  const direction = optionalString(object, 'direction');
+  return {
+    projectId: requiredString(object, 'projectId'),
+    versionId: requiredString(object, 'versionId'),
+    ...(direction === undefined ? {} : { direction }),
+    ...writingMetadata(object),
+  };
+}
+
+export function parseReviewInput(object: Record<string, unknown>): ReviewInput {
+  assertKnownKeys(object, [
+    'projectId',
+    'versionId',
+    'focus',
+    'protectedFields',
+    'sourceRefs',
+  ]);
+  const focus = optionalString(object, 'focus');
+  return {
+    projectId: requiredString(object, 'projectId'),
+    versionId: requiredString(object, 'versionId'),
+    ...(focus === undefined ? {} : { focus }),
     ...writingMetadata(object),
   };
 }

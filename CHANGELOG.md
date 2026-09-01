@@ -1,5 +1,15 @@
 # 变更记录
 
+## [0.5.0] - 2026-08-31
+
+- 新增人味化改写与发布前复核：基于指定内容版本分别创建独立的 `humanized` 和 `review` 版本，不覆盖原稿，并输出修改说明、待确认问题和结构化复核结论。
+- 新增由 Core 计算的真实内容 Diff 与保护字段校验；模型生成的修改说明仅用于解释改写意图，保护字段被删除、改写或无法从源稿定位时阻止人味化版本落库。
+- 新增 `/humanink-humanize` 与 `/humanink-review` Harness 命令，打通 `draft → humanized → review → Markdown 导出` 的持久化闭环。
+- 新增 `transactions.jsonl` 可恢复提交日志，用于在进程崩溃后恢复内容版本与项目当前版本指针，并按 `operationId` 对账；该机制不宣称突然断电场景下的数据库级原子性。
+- 保持 0.4 的五种公开任务状态不变；运行中取消通过 `cancellationRequested=true` 与 `cancelRequestedAt` 表示。重启恢复时会按 `operationId` 与内容仓储对账，若内容已提交但完整 `task result` 未落盘，则返回 `TASK_RECOVERY_REQUIRED` 要求人工核对。
+- 新增 LLM 单次超时、有限次数重试和固定退避；仅重试明确的临时故障，不重试取消、非法 JSON 或结构校验错误，并对外只暴露稳定错误码与安全提示，隐藏 Provider 原始消息、堆栈和凭据。
+- 补充 Core、Storage 与 Harness 单元及端到端测试，覆盖人味化/复核闭环、真实 Diff、保护字段违规、非法模型输出、事务恢复、错误脱敏和运行中取消场景。
+
 ## [0.4.0] - 2026-08-31
 
 - 新增 JSONL 内容仓储，持久化项目与内容版本，并支持启动恢复、引用校验、幂等写入和不可变快照。

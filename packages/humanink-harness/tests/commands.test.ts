@@ -4,6 +4,7 @@ import {
   type HarnessCommandDefinition,
   type HarnessCommandRegistryLike,
 } from '../src/commands/index.js';
+import { TaskRuntime } from '../src/runtime/task-runtime.js';
 
 function createRegistry() {
   const definitions = new Map<string, HarnessCommandDefinition>();
@@ -29,6 +30,8 @@ function application(overrides: Record<string, unknown> = {}) {
     generateBrief: vi.fn(),
     generateOutline: vi.fn(),
     generateDraft: vi.fn(),
+    humanizeContent: vi.fn(),
+    reviewContent: vi.fn(),
     getTask: vi.fn(),
     cancelTask: vi.fn(),
     exportVersion: vi.fn(),
@@ -48,6 +51,8 @@ describe('HumanInk Harness commands', () => {
       'humanink-brief',
       'humanink-outline',
       'humanink-draft',
+      'humanink-humanize',
+      'humanink-review',
       'humanink-task',
       'humanink-cancel',
       'humanink-export',
@@ -72,7 +77,17 @@ describe('HumanInk Harness commands', () => {
     const generateBrief = vi.fn().mockReturnValue({ id: 'task_brief', status: 'queued' });
     const generateOutline = vi.fn().mockReturnValue({ id: 'task_outline', status: 'queued' });
     const generateDraft = vi.fn().mockReturnValue({ id: 'task_draft', status: 'queued' });
-    const app = application({ createProject, generateTitles, generateBrief, generateOutline, generateDraft });
+    const humanizeContent = vi.fn().mockReturnValue({ id: 'task_humanize', status: 'queued' });
+    const reviewContent = vi.fn().mockReturnValue({ id: 'task_review', status: 'queued' });
+    const app = application({
+      createProject,
+      generateTitles,
+      generateBrief,
+      generateOutline,
+      generateDraft,
+      humanizeContent,
+      reviewContent,
+    });
     const { definitions, registry } = createRegistry();
     registerHumanInkCommands(registry, app);
     const signal = new AbortController().signal;
@@ -100,6 +115,14 @@ describe('HumanInk Harness commands', () => {
       rawInput: '{"projectId":"project_1","briefVersionId":"version_brief","outlineVersionId":"version_outline"}',
       signal,
     });
+    const humanized = await definitions.get('humanink-humanize')!.handler({
+      rawInput: '{"projectId":"project_1","versionId":"version_draft","direction":"更自然具体","protectedFields":["品牌名"],"sourceRefs":["source://1"]}',
+      signal,
+    });
+    const reviewed = await definitions.get('humanink-review')!.handler({
+      rawInput: '{"projectId":"project_1","versionId":"version_humanized","focus":"核对事实","protectedFields":["品牌名"],"sourceRefs":["source://1"]}',
+      signal,
+    });
 
     expect(created.kind).toBe('success');
     expect(parseJsonResult(created)).toEqual({ projectId: 'project_1', sourceVersionId: 'version_source' });
@@ -123,10 +146,32 @@ describe('HumanInk Harness commands', () => {
       { projectId: 'project_1', briefVersionId: 'version_brief', outlineVersionId: 'version_outline' },
       signal,
     );
+    expect(humanizeContent).toHaveBeenCalledWith(
+      {
+        projectId: 'project_1',
+        versionId: 'version_draft',
+        direction: '更自然具体',
+        protectedFields: ['品牌名'],
+        sourceRefs: ['source://1'],
+      },
+      signal,
+    );
+    expect(reviewContent).toHaveBeenCalledWith(
+      {
+        projectId: 'project_1',
+        versionId: 'version_humanized',
+        focus: '核对事实',
+        protectedFields: ['品牌名'],
+        sourceRefs: ['source://1'],
+      },
+      signal,
+    );
     expect(parseJsonResult(title)).toEqual({ taskId: 'task_title', status: 'queued' });
     expect(parseJsonResult(brief)).toEqual({ taskId: 'task_brief', status: 'queued' });
     expect(parseJsonResult(outline)).toEqual({ taskId: 'task_outline', status: 'queued' });
     expect(parseJsonResult(draft)).toEqual({ taskId: 'task_draft', status: 'queued' });
+    expect(parseJsonResult(humanized)).toEqual({ taskId: 'task_humanize', status: 'queued' });
+    expect(parseJsonResult(reviewed)).toEqual({ taskId: 'task_review', status: 'queued' });
   });
 
   it('validates and narrows command fields before calling HumanInkApplication', async () => {
@@ -139,6 +184,8 @@ describe('HumanInk Harness commands', () => {
       ['humanink-brief', '{"projectId":"project_1","sourceVersionId":"source_1","protectedFields":[1]}', app.generateBrief],
       ['humanink-outline', '{"projectId":"project_1","briefVersionId":"brief_1","extraDirection":42}', app.generateOutline],
       ['humanink-draft', '{"projectId":"project_1","briefVersionId":"brief_1","outlineVersionId":"outline_1","length":"huge"}', app.generateDraft],
+      ['humanink-humanize', '{"projectId":"project_1","versionId":42}', app.humanizeContent],
+      ['humanink-review', '{"projectId":"project_1","versionId":"version_1","unknown":true}', app.reviewContent],
     ] as const;
 
     for (const [name, rawInput, method] of cases) {
@@ -164,40 +211,59 @@ describe('HumanInk Harness commands', () => {
     expect(app.generateTitles).not.toHaveBeenCalled();
   });
 
-  it('queries and cancels tasks using either short strings or JSON input', async () => {
-    const getTask = vi.fn()
-      .mockReturnValueOnce({
-        id: 'task_1',
-        operationId: 'operation_1',
-        projectId: 'project_1',
-        type: 'draft',
-        status: 'running',
-      })
-      .mockReturnValueOnce({
-        id: 'task_1',
-        operationId: 'operation_1',
-        projectId: 'project_1',
-        type: 'draft',
-        status: 'cancelled',
-        errorCode: 'TASK_CANCELLED',
-        safeMessage: '任务已取消',
-      });
-    const cancelTask = vi.fn().mockReturnValue(true);
+  it('queries tasks and returns a backward-compatible cancellation-request snapshot for repeated cancel commands', async () => {
+    const runtime = new TaskRuntime({
+      idFactory: (prefix) => `${prefix}_command_cancel`,
+      clock: () => new Date('2026-09-01T02:00:00.000Z'),
+    });
+    let releaseOperation: (() => void) | undefined;
+    const operationRelease = new Promise<void>((resolve) => {
+      releaseOperation = resolve;
+    });
+    const task = runtime.start(
+      { projectId: 'project_1', type: 'draft' },
+      async ({ signal }) => {
+        await operationRelease;
+        if (signal.aborted) {
+          throw new DOMException('The operation was aborted.', 'AbortError');
+        }
+        return { ok: true };
+      },
+    );
+    await runtime.waitForStatus(task.id, 'running');
+
+    const getTask = vi.fn((taskId: string) => runtime.get(taskId));
+    const cancelTask = vi.fn((taskId: string) => runtime.cancel(taskId));
     const { definitions, registry } = createRegistry();
     registerHumanInkCommands(registry, application({ getTask, cancelTask }));
 
-    const queried = await definitions.get('humanink-task')!.handler({ rawInput: 'task_1' });
+    const queried = await definitions.get('humanink-task')!.handler({ rawInput: task.id });
     const cancelled = await definitions.get('humanink-cancel')!.handler({
-      rawInput: '{"taskId":"task_1"}',
+      rawInput: JSON.stringify({ taskId: task.id }),
     });
+    const repeated = await definitions.get('humanink-cancel')!.handler({ rawInput: task.id });
 
     expect(queried.kind).toBe('success');
-    expect(parseJsonResult(queried)).toMatchObject({ id: 'task_1', status: 'running' });
-    expect(cancelTask).toHaveBeenCalledWith('task_1');
-    expect(getTask).toHaveBeenNthCalledWith(1, 'task_1');
-    expect(getTask).toHaveBeenNthCalledWith(2, 'task_1');
+    expect(parseJsonResult(queried)).toMatchObject({ id: task.id, status: 'running' });
+    expect(cancelTask).toHaveBeenCalledTimes(2);
     expect(cancelled.kind).toBe('success');
-    expect(parseJsonResult(cancelled)).toMatchObject({ id: 'task_1', status: 'cancelled' });
+    expect(parseJsonResult(cancelled)).toMatchObject({
+      id: task.id,
+      status: 'running',
+      cancellationRequested: true,
+      cancelAccepted: true,
+      cancelRequestedAt: '2026-09-01T02:00:00.000Z',
+    });
+    expect(repeated.kind).toBe('success');
+    expect(parseJsonResult(repeated)).toMatchObject({
+      id: task.id,
+      status: 'running',
+      cancellationRequested: true,
+      cancelAccepted: true,
+    });
+
+    releaseOperation?.();
+    await expect(runtime.waitForTerminal(task.id)).resolves.toMatchObject({ status: 'cancelled' });
   });
 
   it('exports Markdown with a short version id and hides application errors', async () => {
