@@ -1,4 +1,6 @@
-# HumanInk
+# dsh-humanink
+
+本仓库的可安装 Bundle 名称为 `dsh-humanink`，产品品牌仍为 **HumanInk**；用户命令继续使用 `/humanink-*`，以保持命令入口简洁和兼容。
 
 HumanInk 是面向中文自媒体创作者的通用内容工作台，也是一个 DeepSeek Harness 插件。它把标题、内容简报、大纲、初稿、人味化改写、发布前复核、任务查询/取消和 Markdown 导出串成一条本地可恢复的内容生产链路。
 
@@ -77,7 +79,7 @@ allowBuilds:
   humanink: true
 ```
 
-如果不希望在安装时执行源码构建，可先在可信环境打包，再安装生成的 `.tgz`。完整说明见 [`docs/usage.md`](docs/usage.md)。
+如果不希望在安装时执行源码构建，可先在可信环境打包，再安装生成的 `.tgz`。当前版本示例为 `dsh-humanink-0.6.2.tgz`，完整说明见 [`docs/usage.md`](docs/usage.md)。
 
 ## 安装与验证
 
@@ -93,9 +95,9 @@ npx --yes pnpm@11.7.0 build
 也可使用仓库已安装的本地工具执行聚焦验证：
 
 ```powershell
-node_modules\.bin\vitest.cmd run packages\humanink-core\tests
-node_modules\.bin\vitest.cmd run packages\humanink-storage\tests
-node_modules\.bin\vitest.cmd run packages\humanink-harness\tests
+node_modules\\.bin\\vitest.cmd run packages\\humanink-core\\tests
+node_modules\\.bin\\vitest.cmd run packages\\humanink-storage\\tests
+node_modules\\.bin\\vitest.cmd run packages\\humanink-harness\\tests
 ```
 
 ## Harness 接入
