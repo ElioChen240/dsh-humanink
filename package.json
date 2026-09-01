@@ -1,7 +1,7 @@
 {
-  "name": "humanink",
+  "name": "dsh-humanink",
   "private": false,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "scripts": {

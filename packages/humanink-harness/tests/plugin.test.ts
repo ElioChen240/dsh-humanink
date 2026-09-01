@@ -232,7 +232,7 @@ describe('HumanInk Harness plugin', () => {
       model: 'deepseek-chat',
     });
 
-    expect(name).toBe('humanink');
+    expect(name).toBe('dsh-humanink');
     expect(inject).toEqual(['commands', 'llm']);
     expect(registrations.map((item) => item.name)).toEqual(expect.arrayContaining([
       'humanink-create',

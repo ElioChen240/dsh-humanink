@@ -1,6 +1,6 @@
 - insert:
-    - id: humanink
-      name: humanink
+    - id: dsh-humanink
+      name: dsh-humanink
       config:
         dataDir: '.humanink'
         provider: 'deepseek'

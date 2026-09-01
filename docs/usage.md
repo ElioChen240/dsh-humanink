@@ -37,7 +37,7 @@ DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `d
 Harness CLI 已安装时，直接执行：
 
 ```powershell
-dsh plugin --profile humanink add github:ElioChen240/HumanInk#main
+dsh plugin --profile humanink add github:ElioChen240/dsh-humanink#main
 dsh --profile humanink --dump-config
 dsh --profile humanink web
 ```
@@ -48,7 +48,7 @@ dsh --profile humanink web
 
 ```powershell
 npx --yes pnpm@11.7.0 pack
-dsh plugin --profile humanink add .\humanink-0.6.0.tgz
+dsh plugin --profile humanink add .\dsh-humanink-0.6.1.tgz
 ```
 
 当前 bundle 的默认配置由 Harness 标准 schema 提供：

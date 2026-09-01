@@ -60,7 +60,7 @@ docs/
 HumanInk 已按 DeepSeek Harness 的 bundle 机制提供根目录组合包 manifest。Harness CLI 已安装时，可以直接把 GitHub 仓库安装到指定 profile：
 
 ```powershell
-dsh plugin --profile humanink add github:ElioChen240/HumanInk#main
+dsh plugin --profile humanink add github:ElioChen240/dsh-humanink#main
 ```
 
 安装后启动并验证配置：

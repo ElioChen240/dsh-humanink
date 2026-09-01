@@ -1,4 +1,8 @@
 # 变更记录
+## [0.6.1] - 2026-09-01
+
+- 将可安装的 DeepSeek Harness Bundle、插件标识和 GitHub 安装示例统一为 `dsh-humanink`；保留 HumanInk 产品品牌、`@humanink/*` 内部包名和 `/humanink-*` 用户命令，避免破坏已有工作流程。
+
 
 ## [0.6.0] - 2026-09-01
 

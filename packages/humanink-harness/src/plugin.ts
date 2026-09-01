@@ -17,7 +17,7 @@ import { FileTaskStore } from './services/file-task-store.js';
 import { HarnessLlmProvider, type HarnessLlmServiceLike } from './services/llm-provider.js';
 import { ResilientLlmProvider } from './services/resilient-llm-provider.js';
 
-export const name = 'humanink';
+export const name = 'dsh-humanink';
 export const inject = ['commands', 'llm'] as const;
 
 export interface HumanInkHarnessContext {
