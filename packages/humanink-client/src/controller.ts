@@ -94,6 +94,33 @@ export class HumanInkWorkbenchController {
     } catch (error) { this.patch({ error:messageFrom(error) }); throw error; }
   }
   async refreshTasks(): Promise<void> { this.patch({ tasks:await this.api.listTasks(this.state.activeProjectId) }); }
+  async refreshTasksAndProject(): Promise<void> {
+    const projectId = this.state.activeProjectId;
+    if (!projectId) {
+      await this.refreshTasks();
+      return;
+    }
+    try {
+      const [details, tasks] = await Promise.all([this.api.getProject(projectId), this.api.listTasks(projectId)]);
+      const current = details.currentVersion ?? details.versions[0];
+      const activeVersionStillExists = details.versions.some((version) => version.id === this.state.activeVersionId);
+      const shouldFollowGeneratedVersion = tasks.some((task) => task.status === 'succeeded' && task.versionId === current?.id);
+      const selected = shouldFollowGeneratedVersion || !activeVersionStillExists
+        ? current
+        : details.versions.find((version) => version.id === this.state.activeVersionId) ?? current;
+      this.patch({
+        projects: this.state.projects.map((project) => project.id === details.project.id ? details.project : project),
+        versions: details.versions,
+        tasks,
+        activeVersionId: selected?.id,
+        editor: this.state.editor.dirty
+          ? this.state.editor
+          : { title: selected?.title ?? details.project.title, body: selected?.body ?? '', dirty: false },
+      });
+    } catch (error) {
+      this.patch({ error: messageFrom(error) });
+    }
+  }
   async cancelTask(taskId: string): Promise<void> { await this.api.cancelTask(taskId); await this.refreshTasks(); }
   async restoreVersion(versionId: string): Promise<void> {
     const projectId = this.state.activeProjectId;
