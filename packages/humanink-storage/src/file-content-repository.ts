@@ -354,6 +354,14 @@ export class FileContentRepository implements ContentRepository {
     return project === undefined ? null : cloneAndFreeze(project);
   }
 
+  async listProjects(): Promise<readonly ContentProject[]> {
+    return cloneAndFreeze(
+      [...this.projects.values()]
+        .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
+        .map((project) => cloneAndFreeze(project)),
+    );
+  }
+
   async updateProject(project: ContentProject): Promise<ContentProject> {
     return this.enqueueMutation(() => this.withWriterLock(() => this.updateProjectLocked(project)));
   }

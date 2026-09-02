@@ -5,3 +5,5 @@ export * from './runtime/task-runtime.js';
 export * from './services/file-task-store.js';
 export * from './services/llm-provider.js';
 export * from './services/resilient-llm-provider.js';
+export * from './ui/humanink-ui-facade.js';
+export * from './ui/humanink-ui-transport.js';

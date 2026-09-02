@@ -98,7 +98,7 @@ HumanInk 采用“**Harness 适配层 + 独立内容领域核心 + 可替换 Pro
 | 边界校验 | Zod | 4.x 或项目锁定的兼容小版本，仅在输入/输出边界使用 | 校验用户输入、模型 JSON、Provider 返回值，避免错误数据进入版本库 | 只依赖 TypeScript 类型无法防御运行时数据；Harness Schema 只用于宿主边界 |
 | LLM | Core 定义 `LlmProvider`，Adapter 映射 `ctx.llm` | 不在 Core 固定具体模型 | 支持模型切换、Mock、自定义提示词版本和失败降级 | 在 Core 直接调用 DeepSeek SDK 会锁死供应商边界 |
 | 持久化 | 生产使用 Harness Storage Adapter；本地使用 JSON/JSONL Adapter | Adapter 可替换，数据模型保持一致 | MVP 无原生数据库安装负担，版本记录适合追加写入 | SQLite/PostgreSQL 在多用户、查询和并发需求明确后再引入 |
-| 前端 | MVP 先交付命令驱动流程；正式 Client UI 使用 React + 官方 Slot/Primitive | 当前不交付独立产品演示页 | 命令路径更易自动化验收；React 适合复杂编辑器和异步状态 | Tailwind 暂不使用，避免与 Harness 宿主样式冲突 |
+| 前端 | 命令与 `dsh web` UI 共用文字流程；Client 使用 React + 官方 Slot/Primitive | 当前不交付独立产品演示页 | 命令路径便于自动化验收；React 适合复杂编辑器和异步状态 | Tailwind 暂不使用，避免与 Harness 宿主样式冲突 |
 | Markdown/HTML 导出 | Markdown 为规范源格式；HTML 使用受控 Markdown Renderer 并做清理 | 导出器独立于 Core 编排 | 便于版本 diff、复制和跨平台迁移 | 直接拼接原始 HTML 有 XSS 风险；富文本编辑器后置 |
 | 测试 | Vitest + jsdom + Playwright | PR 至少 Core、Adapter、静态检查；发布前加浏览器验收 | 覆盖同步规则、异步任务、Client UI 和响应式行为 | Jest 可行但不优先；只做手工点击不满足交付要求 |
 | 类型/质量 | `tsc --noEmit`、oxlint、`git diff --check` | 每次提交前执行 | 分别覆盖类型、静态质量和补丁空白错误 | 只依赖 IDE 检查无法形成可复现门禁 |
@@ -178,7 +178,7 @@ humanink-harness/
 ### 4.3 `humanink-client` 正式 UI 边界
 
 - 当前 MVP 不保留独立产品演示页，交付重点是可测试的 Harness 命令和内容版本链；
-- 正式 UI 后续单独放在 `humanink-client`，使用 React；
+- `humanink-client` 使用 React，通过 Host facade 和 Connection RPC 访问内容能力；
 - 正式 UI 通过 Adapter 提供的 DTO 和事件协议工作，不直接读写 Repository；
 - 所有生成按钮都显示当前项目、当前文章版本、执行状态和取消入口；
 - UI 必须支持“查看原稿、查看派生稿、查看修改说明、恢复到旧版本”，而不是只显示最后一次模型输出。
@@ -835,3 +835,14 @@ ContentProject
 - 正式 Client UI 不依赖 Harness 私有 DOM，命令能力在无 UI 情况下仍可完整运行；
 - 搜图、AI 封面和平台适配可以在不修改核心版本不变量的前提下新增；
 - 每个实现任务遵守仓库 `AGENTS.md`：修改前检查 Git，完成后自测、更新版本、记录变更并提交 Git 版本。
+
+
+## dsh web Client UI（0.7.0）
+
+HumanInk 的正式可视化入口位于 `dsh web`，由 `packages/humanink-client` 提供 Browser client，由 `packages/humanink-harness` 提供 Host facade 和 Connection RPC。根 Bundle 同时提供 Host `.` 与 Browser `./client` 入口，`dsh.client` manifest 声明 Connection、UI renderer、layout 和 sidebar 依赖。
+
+Host facade 只编排现有 `HumanInkApplication`、`ContentProjectService`、`ContentRepository` 和 `TaskRuntime`，不复制领域规则。项目列表、版本详情、人工保存、恢复、工作流、任务和 Markdown 导出均通过独立 `/humanink` channel 传输。
+
+Browser UI 通过两个官方 Slot 接入：`sidebar.footer.action` 提供打开按钮，`shell.overlay` 提供三栏全屏工作台。Overlay 容器由 Harness click-through，工作台根节点恢复 pointer events。AI 产出和人工保存遵循不可变版本链，UI 只负责交互和呈现。
+
+真实宿主验收要求当前机器具备 `dsh web` CLI、对应 Client runtime 和可用 LLM provider；源码单测、类型检查、Bundle 形状检查不能替代该浏览器集成验收。

@@ -1,4 +1,13 @@
 # 变更记录
+## [0.7.0] - 2026-09-02
+
+- 新增集成在 `dsh web` 内的 HumanInk 三栏 React 内容工作台；
+- 新增 `sidebar.footer.action` 入口和 `shell.overlay` 全屏工作台，支持项目、版本、编辑、预览、导出和任务操作；
+- 新增 Host UI facade 与 `/humanink` Connection RPC，复用现有领域服务、JSONL 存储和任务运行时；
+- 新增项目列表仓储能力，UI 与命令共用同一内容版本链；
+- 根 Bundle 新增 `./client` Browser 入口和 `dsh.client` manifest，生成 lazy-CJS closure 形状的 Client 产物；
+- 保持搜图、AI 封面、自动选题、腾讯朱雀检测和平台发布在后续版本。
+
 ## [0.6.2] - 2026-09-01
 
 - 更新 README 标题和安装包示例，明确 `dsh-humanink` 是可安装 Bundle 名称、HumanInk 是产品品牌，并保持 `/humanink-*` 命令兼容。

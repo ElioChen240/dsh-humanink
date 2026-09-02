@@ -21,6 +21,9 @@
     },
     {
       "path": "./packages/humanink-harness/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/humanink-client/tsconfig.build.json"
     }
   ]
 }

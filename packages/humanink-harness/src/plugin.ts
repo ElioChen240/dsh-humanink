@@ -16,13 +16,16 @@ import { TaskRuntime } from './runtime/task-runtime.js';
 import { FileTaskStore } from './services/file-task-store.js';
 import { HarnessLlmProvider, type HarnessLlmServiceLike } from './services/llm-provider.js';
 import { ResilientLlmProvider } from './services/resilient-llm-provider.js';
+import { HumanInkUiFacade } from './ui/humanink-ui-facade.js';
+import { registerHumanInkUiRpc, type HumanInkConnectionLike } from './ui/humanink-ui-transport.js';
 
 export const name = 'dsh-humanink';
-export const inject = ['commands', 'llm'] as const;
+export const inject = ['commands', 'llm', 'connection'] as const;
 
 export interface HumanInkHarnessContext {
   readonly commands: HarnessCommandRegistryLike;
   readonly llm: HarnessLlmServiceLike;
+  readonly connection?: HumanInkConnectionLike;
 }
 
 export interface HumanInkHarnessConfig {
@@ -98,5 +101,16 @@ export function createHumanInkApplication(
 
 export function apply(ctx: HumanInkHarnessContext, config: HumanInkHarnessConfig): () => void {
   const application = createHumanInkApplication(ctx, config);
-  return registerHumanInkCommands(ctx.commands, application);
+  const disposeCommands = registerHumanInkCommands(ctx.commands, application);
+  const facade = new HumanInkUiFacade({
+    application,
+    catalog: application,
+    projectService: application,
+  });
+  const disposeRpc = ctx.connection === undefined ? undefined : registerHumanInkUiRpc(ctx.connection, facade);
+
+  return () => {
+    disposeCommands();
+    if (disposeRpc !== undefined) void disposeRpc();
+  };
 }

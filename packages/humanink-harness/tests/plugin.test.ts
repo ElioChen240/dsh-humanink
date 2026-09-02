@@ -211,7 +211,7 @@ describe('HumanInk Harness plugin', () => {
     expect(existingDataFiles(join(root, '  data  '))).toEqual([]);
   });
 
-  it('composes storage, runtime, LLM adapter, and command registrations', () => {
+  it('composes storage, runtime, LLM adapter, command registrations, and UI RPC', async () => {
     const dataDir = mkdtempSync(join(tmpdir(), 'humanink-plugin-'));
     roots.push(dataDir);
     const registrations: Array<{ name: string }> = [];
@@ -224,6 +224,14 @@ describe('HumanInk Harness plugin', () => {
         },
       },
       llm: idleLlm(),
+      connection: {
+        rpc: {
+          handle(channel: string) {
+            expect(channel).toBe('/humanink');
+            return async () => { disposed += 1; };
+          },
+        },
+      },
     };
 
     const dispose = apply(ctx, {
@@ -233,7 +241,7 @@ describe('HumanInk Harness plugin', () => {
     });
 
     expect(name).toBe('dsh-humanink');
-    expect(inject).toEqual(['commands', 'llm']);
+    expect(inject).toEqual(['commands', 'llm', 'connection']);
     expect(registrations.map((item) => item.name)).toEqual(expect.arrayContaining([
       'humanink-create',
       'humanink-title',
@@ -248,7 +256,7 @@ describe('HumanInk Harness plugin', () => {
     ]));
 
     dispose();
-    expect(disposed).toBe(registrations.length);
+    await vi.waitFor(() => { expect(disposed).toBe(registrations.length + 1); });
   });
 
   it('injects humanize and review capabilities from the plugin factory', async () => {

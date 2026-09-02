@@ -79,6 +79,14 @@ export class InMemoryContentRepository implements ContentRepository {
     return project === undefined ? null : cloneAndFreeze(project);
   }
 
+  async listProjects(): Promise<readonly ContentProject[]> {
+    return cloneAndFreeze(
+      [...this.projects.values()]
+        .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
+        .map((project) => cloneAndFreeze(project)),
+    );
+  }
+
   async updateProject(project: ContentProject): Promise<ContentProject> {
     if (!this.projects.has(project.id)) {
       throw new ProjectNotFoundError(project.id);

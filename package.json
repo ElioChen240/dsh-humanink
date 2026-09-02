@@ -1,7 +1,7 @@
 {
   "name": "dsh-humanink",
   "private": false,
-  "version": "0.6.2",
+  "version": "0.7.0",
   "type": "module",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
@@ -19,7 +19,7 @@
     "typescript": "^5.7.2",
     "vitest": "^3.2.4"
   },
-  "main": "dist/bundle/index.mjs",
+  "main": "./dist/bundle/index.mjs",
   "files": [
     "dist/bundle",
     "cordis.patch.yml",
@@ -32,6 +32,24 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ]
     }
+  },
+  "exports": {
+    ".": {
+      "default": "./dist/bundle/index.mjs"
+    },
+    "./client": {
+      "default": "./dist/bundle/client.js"
+    },
+    "./package.json": "./package.json"
   }
 }

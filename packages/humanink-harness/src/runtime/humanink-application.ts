@@ -5,6 +5,9 @@ import type {
   ContentProjectService,
   ContentRepository,
   ContentVersion,
+  ContentVersionSummary,
+  CreateDerivedVersionRequest,
+  RestoreContentVersionInput,
   DraftGenerationInput,
   DraftGenerationUseCase,
   HumanizeRewriteInput,
@@ -21,7 +24,7 @@ import { TaskRuntime, type TaskRecord } from './task-runtime.js';
 
 export interface HumanInkApplicationDependencies {
   readonly repository: ContentRepository;
-  readonly projectService: Pick<ContentProjectService, 'createProject'>;
+  readonly projectService: Pick<ContentProjectService, 'createProject' | 'createDerivedVersion' | 'restoreVersion'>;
   readonly taskRuntime: TaskRuntime;
   readonly titleUseCase: Pick<TitleGenerationUseCase, 'execute'>;
   readonly briefUseCase: Pick<BriefGenerationUseCase, 'execute'>;
@@ -58,8 +61,28 @@ export class HumanInkApplication {
     return this.dependencies.repository.getProject(projectId);
   }
 
+  listProjects(): Promise<readonly ContentProject[]> {
+    return this.dependencies.repository.listProjects();
+  }
+
+  listVersions(projectId: string): Promise<readonly ContentVersionSummary[]> {
+    return this.dependencies.repository.listVersions(projectId);
+  }
+
   getVersion(versionId: string): Promise<ContentVersion | null> {
     return this.dependencies.repository.getVersion(versionId);
+  }
+
+  createDerivedVersion(input: CreateDerivedVersionRequest): Promise<ContentVersion> {
+    return this.dependencies.projectService.createDerivedVersion(input);
+  }
+
+  restoreVersion(input: {
+    readonly projectId: string;
+    readonly versionId: string;
+    readonly createdBy?: RestoreContentVersionInput['createdBy'];
+  }): Promise<ContentVersion> {
+    return this.dependencies.projectService.restoreVersion(input);
   }
 
   generateTitles(input: TitleGenerationInput, signal?: AbortSignal): TaskRecord {

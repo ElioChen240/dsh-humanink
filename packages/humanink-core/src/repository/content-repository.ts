@@ -26,6 +26,7 @@ export interface CommitVersionAndProjectInput {
 export interface ContentRepository {
   createProject(input: CreateContentProjectInput): Promise<ContentProject>;
   getProject(projectId: string): Promise<ContentProject | null>;
+  listProjects(): Promise<readonly ContentProject[]>;
   updateProject(project: ContentProject): Promise<ContentProject>;
   saveVersion(version: ContentVersion): Promise<void>;
   /**

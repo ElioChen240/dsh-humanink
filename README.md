@@ -24,7 +24,6 @@ HumanInk 是面向中文自媒体创作者的通用内容工作台，也是一�
 - 搜图配图、图片版权记录和 AI 封面生成；
 - 实时热点/自动选题；
 - 平台专属规则、多平台分发或自动发布；
-- 正式可视化 Client UI。
 
 这些能力后续应通过独立 Provider 或 UI 模块接入，不能污染 Core 的内容版本不变量。
 
@@ -34,7 +33,8 @@ HumanInk 是面向中文自媒体创作者的通用内容工作台，也是一�
 packages/
 ├─ humanink-core/       # 内容项目、版本、生成用例、人味化和复核领域规则
 ├─ humanink-storage/    # projects.jsonl / versions.jsonl / transactions.jsonl
-└─ humanink-harness/    # Harness 插件入口、命令、LLM 适配和 tasks.jsonl
+├─ humanink-harness/    # Harness 插件入口、命令、UI facade、RPC 和 tasks.jsonl
+└─ humanink-client/     # dsh web Browser client 和 React 工作台
 
 docs/
 ├─ usage.md             # 安装、接入、命令流和故障排查
@@ -98,6 +98,14 @@ node_modules\.bin\vitest.cmd run packages\humanink-core\tests
 node_modules\.bin\vitest.cmd run packages\humanink-storage\tests
 node_modules\.bin\vitest.cmd run packages\humanink-harness\tests
 ```
+
+## dsh web 可视化工作台
+
+安装 Bundle 后，在 `dsh web` 左侧栏点击 **HumanInk**，即可打开正式的三栏内容工作台：左侧管理项目和版本，中间编辑/预览正文，右侧执行标题、简报、大纲、初稿、人味化和发布前复核。UI 与 `/humanink-*` 命令共用同一套 JSONL 数据、版本链和任务运行时。
+
+UI 通过官方 Connection 的 `/humanink` RPC 通道接入，并使用 `sidebar.footer.action` 与 `shell.overlay` Slot；不会覆盖 Harness 私有 DOM。AI 动作和手工保存都创建新版本，不静默覆盖当前内容。导出 Markdown、取消任务和切换历史版本均可在工作台完成。
+
+> 当前仓库已生成符合 lazy-CJS closure 形状的 `dist/bundle/client.js`，但真实 `dsh web` 浏览器加载仍需在安装了对应 Harness CLI 和官方 Client 运行时的环境中验收。
 
 ## Harness 接入
 

@@ -1,6 +1,6 @@
 # HumanInk 使用文档
 
-本文说明 HumanInk 当前 MVP 的安装、Harness 接入、命令流、任务管理、本地数据文件和故障排查。当前交付物是命令驱动的通用中文内容工作台，不包含独立产品演示页，也不绑定微信公众号、小红书、抖音、知乎等单一平台。
+本文说明 HumanInk 当前 MVP 的安装、dsh web UI、Harness 接入、命令流、任务管理、本地数据文件和故障排查。当前交付物是命令与 UI 共用数据的通用中文内容工作台，不包含独立产品演示页，也不绑定微信公众号、小红书、抖音、知乎等单一平台。
 
 ## 1. 前置条件
 
@@ -31,7 +31,8 @@ DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `d
 
 - `main`：指向构建后的插件入口；
 - `files`：只发布运行所需的构建产物和 patch；
-- `dsh.bundle.patch`：把 `humanink` 插件行加入 profile；
+- `dsh.bundle.patch`：把 `dsh-humanink` 插件行加入 profile；
+- `dsh.client`：加载 Browser client，在 dsh web 左侧提供 HumanInk 入口；
 - `prepare`：从 GitHub 源码安装时先构建 Core、Storage 和 Harness。
 
 Harness CLI 已安装时，直接执行：
@@ -48,7 +49,7 @@ dsh --profile humanink web
 
 ```powershell
 npx --yes pnpm@11.7.0 pack
-dsh plugin --profile humanink add .\dsh-humanink-0.6.2.tgz
+dsh plugin --profile humanink add .\dsh-humanink-0.7.0.tgz
 ```
 
 当前 bundle 的默认配置由 Harness 标准 schema 提供：
@@ -61,6 +62,28 @@ dsh plugin --profile humanink add .\dsh-humanink-0.6.2.tgz
 | `timeoutMs` | `60000` | 单次模型调用超时。 |
 | `maxAttempts` | `3` | 临时错误最大尝试次数。 |
 | `backoffMs` | `500` | 重试退避基准毫秒数。 |
+
+### dsh web 可视化工作台
+
+启动 `dsh web` 后，在左侧栏点击 **HumanInk** 入口打开工作台。工作台不创建第二套数据存储，读取和写入与命令入口相同的 `.humanink/` 目录。
+
+- **左栏**：新建文章、项目列表、版本历史和版本切换；
+- **中栏**：标题和 Markdown 正文编辑，支持编辑/预览切换、保存为新版本和导出；
+- **右栏**：生成标题、简报、大纲、初稿、人味化改写、发布前复核，以及任务状态和取消；
+- **顶部**：保存状态、导出 Markdown、关闭工作台。
+
+AI 生成结果与手工编辑均以新版本写入；恢复历史版本会创建 `restored` 新版本；复核只返回问题、风险和建议，不自动发布。UI 任务和命令任务共用 `tasks.jsonl` 与同一任务状态机。
+
+Browser client 通过官方 Connection 注册独立 `/humanink` RPC 通道，Host 端负责鉴权、持久化和领域调用。当前端点为：
+
+```text
+projects/list       projects/get       projects/create
+versions/save       versions/restore
+workflow/run        tasks/list         tasks/cancel
+export/markdown
+```
+
+工作台入口注册在 `sidebar.footer.action`，全屏工作台注册在 `shell.overlay`。Overlay 的直接根节点显式启用 `pointer-events: auto`。真实宿主浏览器验收需要可用的 `dsh web` CLI 和对应 Client runtime。
 
 ## 4. Harness 接入
 
@@ -276,12 +299,11 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Credentials
 
 ## 13. 当前边界与后续能力
 
-当前版本只保证命令驱动的文字工作流。以下能力尚未作为可交付功能：
+当前版本保证命令与 `dsh web` UI 共用的文字工作流。以下能力尚未作为可交付功能：
 
 - 腾讯朱雀检测正式接入；
 - 搜图、图片版权记录和 AI 封面生成；
 - 热点抓取和自动选题；
 - 平台专属格式、多平台分发和自动发布；
-- 正式可视化 Client UI。
 
 这些能力后续接入时必须保持：用户主动触发、结果绑定版本、失败不阻塞文字流程、日志不泄露正文和凭据。
