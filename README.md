@@ -59,7 +59,7 @@ docs/
 ## 一键安装到 DeepSeek Harness
 
 HumanInk 已按 DeepSeek Harness 的 bundle 机制提供根目录组合包 manifest。
-注意：当前 GitHub 仓库是私有仓库。GitHub 安装命令只有在 DSH Desktop 当前 profile 已配置访问权限时才可用；没有权限时请使用下方的本地 tarball 安装方式。
+
 
 ```powershell
 dsh plugin --profile humanink add github:ElioChen240/dsh-humanink#main

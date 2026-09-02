@@ -1,30 +1,34 @@
 # 变更记录
+## [0.7.3] - 2026-09-02
+
+- 文档：同步 GitHub 仓库公开后的安装说明，并修正 ddsh-humanink-0.7.2.tgzd 版本示例。
+
 ## [0.7.2] - 2026-09-02
 
 - 修正文档，明确当前 GitHub 仓库为私有仓库，并补充 DSH Desktop 的凭据前置条件和本地 tarball 安装路径。
 
 ## [0.7.1] - 2026-09-02
 
-- 对齐 DSH Desktop 的普通第三方插件接入方式：继续使用标准 `dsh.bundle`、`dsh.client` 和 `./client` 导出，不引入 Electron 私有 API；
+- 对齐 DSH Desktop 的普通第三方插件接入方式：继续使用标准 ddsh.bundled、ddsh.clientd 和 d./clientd 导出，不引入 Electron 私有 API；
 - 补充 DSH Desktop 安装、重启和真实宿主验收说明；
 - 增加桌面兼容性契约测试，防止 Client manifest 或 Electron 边界回归。
 
 ## [0.7.0] - 2026-09-02
 
-- 新增集成在 `dsh web` 内的 HumanInk 三栏 React 内容工作台；
-- 新增 `sidebar.footer.action` 入口和 `shell.overlay` 全屏工作台，支持项目、版本、编辑、预览、导出和任务操作；
-- 新增 Host UI facade 与 `/humanink` Connection RPC，复用现有领域服务、JSONL 存储和任务运行时；
+- 新增集成在 ddsh webd 内的 HumanInk 三栏 React 内容工作台；
+- 新增 dsidebar.footer.actiond 入口和 dshell.overlayd 全屏工作台，支持项目、版本、编辑、预览、导出和任务操作；
+- 新增 Host UI facade 与 d/humaninkd Connection RPC，复用现有领域服务、JSONL 存储和任务运行时；
 - 新增项目列表仓储能力，UI 与命令共用同一内容版本链；
-- 根 Bundle 新增 `./client` Browser 入口和 `dsh.client` manifest，生成 lazy-CJS closure 形状的 Client 产物；
+- 根 Bundle 新增 d./clientd Browser 入口和 ddsh.clientd manifest，生成 lazy-CJS closure 形状的 Client 产物；
 - 保持搜图、AI 封面、自动选题、腾讯朱雀检测和平台发布在后续版本。
 
 ## [0.6.2] - 2026-09-01
 
-- 更新 README 标题和安装包示例，明确 `dsh-humanink` 是可安装 Bundle 名称、HumanInk 是产品品牌，并保持 `/humanink-*` 命令兼容。
+- 更新 README 标题和安装包示例，明确 ddsh-humaninkd 是可安装 Bundle 名称、HumanInk 是产品品牌，并保持 d/humanink-*d 命令兼容。
 
 ## [0.6.1] - 2026-09-01
 
-- 将可安装的 DeepSeek Harness Bundle、插件标识和 GitHub 安装示例统一为 `dsh-humanink`；保留 HumanInk 产品品牌、`@humanink/*` 内部包名和 `/humanink-*` 用户命令，避免破坏已有工作流程。
+- 将可安装的 DeepSeek Harness Bundle、插件标识和 GitHub 安装示例统一为 ddsh-humaninkd；保留 HumanInk 产品品牌、d@humanink/*d 内部包名和 d/humanink-*d 用户命令，避免破坏已有工作流程。
 
 
 ## [0.6.0] - 2026-09-01
@@ -37,30 +41,30 @@
 
 - 删除独立产品演示页目录和对应的历史实现计划文档，当前交付聚焦命令驱动的 MVP 文字闭环。
 - 重写 README，明确当前能力、Harness 接入方式、标准命令流、任务恢复和产品边界。
-- 新增 `docs/usage.md` 使用文档，补齐安装验证、命令参数、工作流示例、任务状态、本地数据文件和错误码说明。
+- 新增 ddocs/usage.mdd 使用文档，补齐安装验证、命令参数、工作流示例、任务状态、本地数据文件和错误码说明。
 - 更新架构参考文档，移除对独立演示页作为当前交付物的依赖说明，保留正式 Client UI 的后续接入边界。
 
 ## [0.5.0] - 2026-08-31
 
-- 新增人味化改写与发布前复核：基于指定内容版本分别创建独立的 `humanized` 和 `review` 版本，不覆盖原稿，并输出修改说明、待确认问题和结构化复核结论。
+- 新增人味化改写与发布前复核：基于指定内容版本分别创建独立的 dhumanizedd 和 dreviewd 版本，不覆盖原稿，并输出修改说明、待确认问题和结构化复核结论。
 - 新增由 Core 计算的真实内容 Diff 与保护字段校验；模型生成的修改说明仅用于解释改写意图，保护字段被删除、改写或无法从源稿定位时阻止人味化版本落库。
-- 新增 `/humanink-humanize` 与 `/humanink-review` Harness 命令，打通 `draft → humanized → review → Markdown 导出` 的持久化闭环。
-- 新增 `transactions.jsonl` 可恢复提交日志，用于在进程崩溃后恢复内容版本与项目当前版本指针，并按 `operationId` 对账；该机制不宣称突然断电场景下的数据库级原子性。
-- 保持 0.4 的五种公开任务状态不变；运行中取消通过 `cancellationRequested=true` 与 `cancelRequestedAt` 表示。重启恢复时会按 `operationId` 与内容仓储对账，若内容已提交但完整 `task result` 未落盘，则返回 `TASK_RECOVERY_REQUIRED` 要求人工核对。
+- 新增 d/humanink-humanized 与 d/humanink-reviewd Harness 命令，打通 ddraft → humanized → review → Markdown 导出d 的持久化闭环。
+- 新增 dtransactions.jsonld 可恢复提交日志，用于在进程崩溃后恢复内容版本与项目当前版本指针，并按 doperationIdd 对账；该机制不宣称突然断电场景下的数据库级原子性。
+- 保持 0.4 的五种公开任务状态不变；运行中取消通过 dcancellationRequested=trued 与 dcancelRequestedAtd 表示。重启恢复时会按 doperationIdd 与内容仓储对账，若内容已提交但完整 dtask resultd 未落盘，则返回 dTASK_RECOVERY_REQUIREDd 要求人工核对。
 - 新增 LLM 单次超时、有限次数重试和固定退避；仅重试明确的临时故障，不重试取消、非法 JSON 或结构校验错误，并对外只暴露稳定错误码与安全提示，隐藏 Provider 原始消息、堆栈和凭据。
 - 补充 Core、Storage 与 Harness 单元及端到端测试，覆盖人味化/复核闭环、真实 Diff、保护字段违规、非法模型输出、事务恢复、错误脱敏和运行中取消场景。
 
 ## [0.4.0] - 2026-08-31
 
 - 新增 JSONL 内容仓储，持久化项目与内容版本，并支持启动恢复、引用校验、幂等写入和不可变快照。
-- 新增内容简报、文章大纲和 Markdown 初稿生成用例，建立 `source → brief → outline → draft` 版本链。
+- 新增内容简报、文章大纲和 Markdown 初稿生成用例，建立 dsource → brief → outline → draftd 版本链。
 - 新增 DeepSeek Harness 插件入口、LLM 流式适配器和 8 个官方命名规则兼容的 HumanInk 命令。
-- 新增异步任务运行时与 `tasks.jsonl` 持久化，覆盖排队、运行、成功、失败、取消和进程中断恢复。
+- 新增异步任务运行时与 dtasks.jsonld 持久化，覆盖排队、运行、成功、失败、取消和进程中断恢复。
 - 新增标题到初稿的持久化 MVP 集成测试、Markdown 导出和安装/命令使用说明。
 
 ## [0.3.0] - 2026-08-31
 
-- 增加 `LlmProvider` 抽象接口，为后续 Harness 和多模型接入保留稳定边界。
+- 增加 dLlmProviderd 抽象接口，为后续 Harness 和多模型接入保留稳定边界。
 - 增加中文标题候选生成用例，支持结构化输出、候选清洗、数量约束、取消检查和模型元数据记录。
 - 加强内容仓储的项目、父版本和当前版本引用校验，扩大版本冲突检测范围并保持不可变快照。
 - 调整项目初始化顺序，避免 source 版本保存失败时留下悬空的当前版本指针。
@@ -68,7 +72,7 @@
 
 ## [0.2.0] - 2026-08-31
 
-- 建立 TypeScript ESM workspace 和 `@humanink/core` 包。
+- 建立 TypeScript ESM workspace 和 d@humanink/cored 包。
 - 实现内容项目、原始内容版本、派生版本、历史恢复和内存仓储。
 - 增加不可变版本、内容哈希、幂等保存、冲突检测及父版本归属校验。
 - 增加中文模板化诊断规则，支持轻度、标准和深度三种人味化分析模式。
@@ -79,11 +83,11 @@
 
 - 增加 HumanInk 技术栈与系统架构参考文档，明确 Harness 适配层、独立 Core、Provider、版本化存储和测试门禁。
 - 明确朱雀检测仅作为可选外部参考，不阻塞内容工作流，不自动循环改写或宣称真人认证。
-- 增加 `.humanink/` 本地内容数据目录的 Git 忽略规则，避免正文、任务和检测数据误提交。
+- 增加 d.humanink/d 本地内容数据目录的 Git 忽略规则，避免正文、任务和检测数据误提交。
 
 ## [0.1.2] - 2026-08-31
 
-- 增加 `demo/` 交互式 HTML5 Demo，展示 HumanInk 通用内容工作台的文章生产流程。
+- 增加 ddemo/d 交互式 HTML5 Demo，展示 HumanInk 通用内容工作台的文章生产流程。
 - 增加标题切换、人味化模拟、朱雀检测模拟、主题切换、响应式布局和 Markdown 导出交互。
 - 明确 Demo 使用本地演示数据，不连接真实模型、搜索服务或朱雀 API。
 
@@ -97,5 +101,5 @@
 ## [0.1.0] - 2026-08-31
 
 - 初始化 Git 版本管理。
-- 增加 `AGENTS.md`，规定每次改动提交版本并在完成后自测。
-- 增加根目录 `VERSION` 文件。
+- 增加 dAGENTS.mdd，规定每次改动提交版本并在完成后自测。
+- 增加根目录 dVERSIONd 文件。
