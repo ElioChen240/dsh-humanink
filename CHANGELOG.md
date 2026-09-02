@@ -1,4 +1,15 @@
 # 变更记录
+## [0.8.0] - 2026-09-03
+
+- HumanInk 接入 DSH Better Sidebar 原生 Tab：客户端入口注入 `betterSidebar` 服务，注册 `humanink:workbench` / `HumanInk` 单实例 Tab，注册与卸载通过 `ctx.effect` 挂在 Cordis fiber 上，HMR 与插件卸载不会产生重复 Tab；
+- 原生 Tab 渲染窄侧栏版 `native-workbench` 内容工作台（项目选择/新建、标题、创作流程、编辑、任务、版本历史、Markdown 导出），并展示当前 DSH 会话的 `sessionId` 与 `cwd`/`repoRoot`；全屏 Overlay 不再默认注册，也不再自动弹出；
+- Better Sidebar 不可用或形态异常时自动降级为兼容入口：仅注册 `sidebar.footer.action` 打开按钮，插件加载不会崩溃；
+- 支持 DSH session scope：Tab 组件接收 `scope` 并把 `sessionId`、`cwd` 传入 UI；当前 MVP 仍为共享 controller，代码内已注明该边界；
+- 完善任务失败展示：新增客户端安全错误归一化（`errors.ts`），按 Harness 稳定错误码给出原因、请求阶段与建议（如 `LLM_PROVIDER_FAILED` → 提示检查当前 DSH profile 的模型配置），并对未知错误做 API Key / Authorization / 堆栈脱敏；任务失败状态显示可读原因而非单纯"失败"；
+- 明确模型配置边界：provider/model 仅为可被宿主 profile 覆盖的默认值，所有生成调用继续通过 Harness `ctx.llm.stream`，不读取 API Key、不直连外部模型服务；
+- 声明 `dsh-better-sidebar` 为 optional peerDependency（宿主能力，不打包、不重复安装）；由于该包的传递依赖含私有 registry 产物，编译期类型继续使用仓库内的结构化适配器（`better-sidebar-adapter.ts`）；
+- 新增/更新测试：Better Sidebar Tab 注册、Tab ID/标题、重复注册与卸载、缺少 betterSidebar 的降级、原生工作台最小上下文渲染、session scope 透传、失败错误卡片、任务状态标签与既有功能回归。
+
 ## [0.7.3] - 2026-09-02
 
 - 文档：同步 GitHub 仓库公开后的安装说明，并修正 ddsh-humanink-0.7.2.tgzd 版本示例。

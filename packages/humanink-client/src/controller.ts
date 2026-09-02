@@ -1,9 +1,11 @@
 import type { ContentVersion, HumanInkClientApi, ProjectSummary, WorkflowAction, WorkflowTask } from './api.js';
+import { describeFailure, formatFailure, sanitizeErrorText, type SafeFailureDetail } from './errors.js';
 
 export type WorkbenchMode = 'edit' | 'preview';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 export interface WorkbenchState {
   isOpen: boolean; loading: boolean; error: string | undefined;
+  errorDetail: SafeFailureDetail | undefined;
   projects: ProjectSummary[]; versions: ContentVersion[]; tasks: WorkflowTask[];
   activeProjectId: string | undefined; activeVersionId: string | undefined;
   mode: WorkbenchMode; saveStatus: SaveStatus;
@@ -11,11 +13,13 @@ export interface WorkbenchState {
 }
 export type WorkbenchListener = (state: Readonly<WorkbenchState>) => void;
 const INITIAL_STATE: WorkbenchState = {
-  isOpen:false, loading:false, error:undefined, projects:[], versions:[], tasks:[],
+  isOpen:false, loading:false, error:undefined, errorDetail:undefined, projects:[], versions:[], tasks:[],
   activeProjectId:undefined, activeVersionId:undefined, mode:'edit', saveStatus:'idle',
   editor:{ title:'', body:'', dirty:false },
 };
-const messageFrom = (error: unknown): string => error instanceof Error ? error.message : '发生未知错误';
+const messageFrom = (error: unknown): string => error instanceof Error ? sanitizeErrorText(error.message) : '发生未知错误';
+/** Clearing an error always clears its structured detail with it. */
+const noError = { error: undefined, errorDetail: undefined } as const;
 
 export class HumanInkWorkbenchController {
   private state: WorkbenchState = structuredClone(INITIAL_STATE);
@@ -25,7 +29,7 @@ export class HumanInkWorkbenchController {
   subscribe(listener: WorkbenchListener): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
 
   async initialize(): Promise<void> {
-    this.patch({ loading:true, error:undefined });
+    this.patch({ loading:true, ...noError });
     try {
       const projects = await this.api.listProjects();
       this.patch({ projects, loading:false });
@@ -36,7 +40,7 @@ export class HumanInkWorkbenchController {
   close(): void { this.patch({ isOpen:false }); }
 
   async createProject(title: string): Promise<void> {
-    this.patch({ loading:true, error:undefined });
+    this.patch({ loading:true, ...noError });
     try {
       const project = await this.api.createProject(title);
       const projects = await this.api.listProjects();
@@ -46,7 +50,7 @@ export class HumanInkWorkbenchController {
   }
 
   async selectProject(projectId: string): Promise<void> {
-    this.patch({ loading:true, error:undefined, activeProjectId:projectId });
+    this.patch({ loading:true, ...noError, activeProjectId:projectId });
     try {
       const [details, tasks] = await Promise.all([this.api.getProject(projectId), this.api.listTasks(projectId)]);
       const current = details.currentVersion ?? details.versions[0];
@@ -73,7 +77,7 @@ export class HumanInkWorkbenchController {
   async save(_label = '人工编辑'): Promise<void> {
     const { activeProjectId, activeVersionId, editor } = this.state;
     if (!activeProjectId || !activeVersionId) return;
-    this.patch({ saveStatus:'saving', error:undefined });
+    this.patch({ saveStatus:'saving', ...noError });
     try {
       await this.api.saveVersion({ projectId:activeProjectId, parentVersionId:activeVersionId, title:editor.title, body:editor.body });
       const [projects, details] = await Promise.all([this.api.listProjects(), this.api.getProject(activeProjectId)]);
@@ -86,12 +90,16 @@ export class HumanInkWorkbenchController {
     const projectId = this.state.activeProjectId;
     const activeVersionId = this.state.activeVersionId;
     if (!projectId || !activeVersionId) throw new Error('请先选择一个项目版本');
-    this.patch({ error:undefined });
+    this.patch({ ...noError });
     try {
       const task = await this.api.runWorkflow({ projectId, workflow, activeVersionId, versions:this.state.versions, ...(selectedTitle === undefined ? {} : { selectedTitle }) });
       this.patch({ tasks:[task, ...this.state.tasks.filter((item) => item.id !== task.id)] });
       return task;
-    } catch (error) { this.patch({ error:messageFrom(error) }); throw error; }
+    } catch (error) {
+      const detail = describeFailure(error);
+      this.patch({ error: formatFailure(detail, workflow), errorDetail: detail });
+      throw error;
+    }
   }
   async refreshTasks(): Promise<void> { this.patch({ tasks:await this.api.listTasks(this.state.activeProjectId) }); }
   async refreshTasksAndProject(): Promise<void> {

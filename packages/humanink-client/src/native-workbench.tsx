@@ -1,12 +1,13 @@
-﻿import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from 'react';
+import { useEffect, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react';
 import type { WorkflowAction } from './api.js';
+import type { BetterSidebarSessionScope, HumanInkWorkbenchTabComponent } from './better-sidebar-adapter.js';
 import type { HumanInkWorkbenchController, WorkbenchState } from './controller.js';
 import { HUMANINK_NATIVE_THEME } from './native-theme.js';
 
 export interface HumanInkNativeWorkbenchProps {
   controller: HumanInkWorkbenchController;
   sessionId: string;
-  cwd?: string;
+  cwd?: string | undefined;
   visible: boolean;
 }
 
@@ -45,9 +46,28 @@ function shortSession(value: string): string {
   return value.length > 12 ? `${value.slice(0, 8)}…` : value;
 }
 
+function errorCard(state: Readonly<WorkbenchState>) {
+  if (!state.error) return null;
+  const detail = state.errorDetail;
+  return <div className="humanink-native__error" role="alert">
+    <strong>操作未完成</strong>
+    <span>{detail ? `原因：${detail.reason}` : state.error}</span>
+    {detail?.stage ? <span>请求阶段：{detail.stage}</span> : null}
+    {detail?.advice ? <span>建议：{detail.advice}</span> : null}
+  </div>;
+}
+
 export function HumanInkNativeWorkbench({ controller, sessionId, cwd, visible }: HumanInkNativeWorkbenchProps) {
   const state = useWorkbenchState(controller);
   const [newTitle, setNewTitle] = useState('');
+
+  useEffect(() => {
+    if (!visible) return undefined;
+    // The controller is shared across sessions; re-seed it only when the store
+    // is empty so a session switch never discards in-progress work.
+    if (state.projects.length === 0 && !state.loading) void controller.initialize();
+    return undefined;
+  }, [controller, visible, state.projects.length, state.loading]);
 
   useEffect(() => {
     if (!visible) return undefined;
@@ -72,9 +92,14 @@ export function HumanInkNativeWorkbench({ controller, sessionId, cwd, visible }:
 
   const run = async (action: WorkflowAction) => {
     try {
-      await controller.triggerAction(action);
+      // When a generated title version is active, feed it into the brief step
+      // so the outline follows the wording the user actually picked.
+      const selectedTitle = action === 'brief' && state.versions.find((version) => version.id === state.activeVersionId)?.kind === 'title'
+        ? state.editor.title
+        : undefined;
+      await controller.triggerAction(action, selectedTitle);
     } catch {
-      // Controller exposes the safe failure message in state.error.
+      // Controller exposes the safe failure detail in state.error/errorDetail.
     }
   };
 
@@ -97,8 +122,9 @@ export function HumanInkNativeWorkbench({ controller, sessionId, cwd, visible }:
         <strong>HumanInk</strong>
         <span>内容助手</span>
       </div>
-      <span className="humanink-native__session" title={cwd ?? sessionId}>会话 {shortSession(sessionId)}</span>
+      <span className="humanink-native__session" title={sessionId}>会话 {shortSession(sessionId)}</span>
     </header>
+    {cwd ? <div className="humanink-native__context" title={cwd}>目录 {cwd}</div> : null}
 
     <div className="humanink-native__create">
       <input value={newTitle} placeholder="输入主题，新建内容" onChange={(event) => setNewTitle(event.target.value)} onKeyDown={onNewTitleKeyDown} />
@@ -109,7 +135,7 @@ export function HumanInkNativeWorkbench({ controller, sessionId, cwd, visible }:
       {state.projects.map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
     </select> : <div className="humanink-native__empty">先创建一个内容项目</div>}
 
-    {state.error ? <div className="humanink-native__error"><strong>操作未完成</strong><span>{state.error}</span></div> : null}
+    {errorCard(state)}
 
     <section className="humanink-native__workflow" aria-label="创作流程">
       {ACTIONS.map(({ action, label, prerequisite }) => {
@@ -134,7 +160,9 @@ export function HumanInkNativeWorkbench({ controller, sessionId, cwd, visible }:
       {state.tasks.length === 0 ? <div className="humanink-native__empty">生成任务会显示在这里</div> : state.tasks.slice(0, 6).map((task) => <div className={`humanink-native__task is-${task.status}`} key={task.id}>
         <span>{ACTIONS.find((item) => item.action === task.action)?.label ?? task.action}</span>
         <strong>{statusLabel(task.status)}</strong>
-        {task.message ? <small title={task.message}>{task.message}</small> : null}
+        {task.status === 'failed'
+          ? <small title={task.message ?? undefined}>原因：{task.message ?? '任务执行失败，请稍后重试'}</small>
+          : task.message ? <small title={task.message}>{task.message}</small> : null}
       </div>)}
     </section>
 
@@ -143,4 +171,21 @@ export function HumanInkNativeWorkbench({ controller, sessionId, cwd, visible }:
       {state.versions.map((version) => <button type="button" className={version.id === state.activeVersionId ? 'is-active' : ''} key={version.id} onClick={() => void controller.selectVersion(version.id)}><span>{version.label}</span><small>{new Date(version.createdAt).toLocaleString()}</small></button>)}
     </details>
   </div>;
+}
+
+/**
+ * Better Sidebar tab component factory. The host calls the returned function
+ * with the live session scope, and every mount renders through the shared
+ * workbench controller.
+ */
+export function createHumanInkNativeTab(controller: HumanInkWorkbenchController): HumanInkWorkbenchTabComponent {
+  return function HumanInkNativeTab({ scope, visible }: { ctx: unknown; scope: BetterSidebarSessionScope; visible: boolean }): ReactNode {
+    const sessionId = scope?.sessionId;
+    return <HumanInkNativeWorkbench
+      controller={controller}
+      sessionId={sessionId && sessionId.length > 0 ? sessionId : '未知会话'}
+      cwd={scope?.cwd ?? scope?.repoRoot}
+      visible={visible}
+    />;
+  };
 }
