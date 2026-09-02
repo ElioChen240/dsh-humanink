@@ -33,3 +33,6 @@ venv/
 # Local package manager cache
 .pnpm-store/
 *.tsbuildinfo
+
+# Local tarball artifacts used for profile installation
+*.tgz

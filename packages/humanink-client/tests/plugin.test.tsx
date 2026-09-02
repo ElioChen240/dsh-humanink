@@ -1,6 +1,6 @@
 import type { FunctionComponent, ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { apply, inject } from '../src/index.js';
+import { activeHumanInkClients, apply, inject } from '../src/index.js';
 import { createHumanInkFakeApi } from '../src/fake-api.js';
 import { HUMANINK_WORKBENCH_TAB_ID, type TabDescriptor } from '../src/better-sidebar-adapter.js';
 import type { HumanInkClientContext, SlotRegistration } from '../src/host-adapter.js';
@@ -9,8 +9,8 @@ interface TestHarness {
   context: HumanInkClientContext;
   registered: Array<{ meta: SlotRegistration; component: FunctionComponent<any> }>;
   disposeSlot: ReturnType<typeof vi.fn>;
-  registerTab: ReturnType<typeof vi.fn>;
   disposeTab: ReturnType<typeof vi.fn>;
+  registerTab: ReturnType<typeof vi.fn>;
   getDescriptor: () => TabDescriptor | undefined;
 }
 
@@ -23,11 +23,7 @@ function createHarness(options: { betterSidebar?: unknown } = {}): TestHarness {
     descriptor = next;
     return disposeTab;
   });
-  const betterSidebar = options.betterSidebar === undefined
-    ? { registerTab, openTab: vi.fn(), activateTab: vi.fn() }
-    : options.betterSidebar;
   const context = {
-    effect: vi.fn((body: () => () => void) => body()),
     slots: {
       inject: (_name: string, setup: () => () => void) => setup(),
       register: (meta: SlotRegistration, component: FunctionComponent<any>) => {
@@ -36,7 +32,7 @@ function createHarness(options: { betterSidebar?: unknown } = {}): TestHarness {
       },
     },
     connection: { rpc: { call: vi.fn(async () => ({ ok: true as const, value: [] })) } },
-    betterSidebar,
+    ...(options.betterSidebar === undefined ? {} : { betterSidebar: options.betterSidebar }),
   } as unknown as HumanInkClientContext;
   return {
     context,
@@ -49,14 +45,47 @@ function createHarness(options: { betterSidebar?: unknown } = {}): TestHarness {
 }
 
 describe('DeepSeek Harness React client entry', () => {
-  it('declares the exact Cordis client services including optional betterSidebar', () => {
-    expect(inject).toEqual(['slots', 'connection', 'betterSidebar']);
+  it('declares core Cordis services; betterSidebar is read via ctx.get to avoid pending fibers', () => {
+    expect(inject).toEqual(['slots', 'connection']);
   });
 
-  it('registers only the native Better Sidebar tab when the service is available', async () => {
-    const harness = createHarness({});
-    const plugin = apply(harness.context, { api: createHumanInkFakeApi() });
-    await plugin.ready;
+  it('resolves betterSidebar through ctx.get when the runtime exposes it', async () => {
+    const harness = createHarness();
+    const service = {
+      registerTab: harness.registerTab,
+      openTab: vi.fn(),
+      activateTab: vi.fn(),
+    };
+    (harness.context as { get?: unknown }).get = (name: string) => name === 'betterSidebar' ? service : undefined;
+
+    apply(harness.context, { api: createHumanInkFakeApi() });
+
+    expect(harness.registerTab).toHaveBeenCalledOnce();
+    expect(harness.getDescriptor()).toMatchObject({ id: HUMANINK_WORKBENCH_TAB_ID, title: 'HumanInk' });
+    expect(harness.registered).toEqual([]);
+    activeHumanInkClients().at(-1)!.dispose();
+  });
+
+  it('applies as a Cordis plugin: returns a disposer, never an object', async () => {
+    const harness = createHarness();
+    const disposer = apply(harness.context, { api: createHumanInkFakeApi() });
+    expect(typeof disposer).toBe('function');
+    const instance = activeHumanInkClients().at(-1)!;
+    expect(instance.controller).toBeDefined();
+    await expect(instance.ready).resolves.toBeUndefined();
+    disposer();
+    expect(activeHumanInkClients()).not.toContain(instance);
+  });
+
+  it('registers the native Better Sidebar tab when the service is available', async () => {
+    const harness = createHarness();
+    (harness.context as { betterSidebar?: unknown }).betterSidebar = {
+      registerTab: harness.registerTab,
+      openTab: vi.fn(),
+      activateTab: vi.fn(),
+    };
+
+    const disposer = apply(harness.context, { api: createHumanInkFakeApi() });
 
     expect(harness.registerTab).toHaveBeenCalledOnce();
     expect(harness.getDescriptor()).toMatchObject({
@@ -64,56 +93,58 @@ describe('DeepSeek Harness React client entry', () => {
       title: 'HumanInk',
       single: true,
     });
-    expect(typeof harness.getDescriptor()?.component).toBe('function');
     // The native tab replaces the legacy slot entries entirely.
-    expect(harness.registered.map(({ meta }) => meta.name)).toEqual([]);
-    expect(harness.disposeSlot).not.toHaveBeenCalled();
-
-    plugin.dispose();
+    expect(harness.registered).toEqual([]);
+    disposer();
     expect(harness.disposeTab).toHaveBeenCalledOnce();
   });
 
-  it('does not register the full-screen overlay even in the legacy fallback', async () => {
-    const harness = createHarness({ betterSidebar: null });
-    const plugin = apply(harness.context, { api: createHumanInkFakeApi() });
-    await plugin.ready;
+  it('falls back to the footer action when Better Sidebar is absent', async () => {
+    const harness = createHarness();
+    const disposer = apply(harness.context, { api: createHumanInkFakeApi() });
 
     expect(harness.registerTab).not.toHaveBeenCalled();
-    expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action']);
-    expect(harness.registered.map(({ meta }) => meta.id)).toEqual(['humanink-open-workbench']);
+    expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action', 'shell.overlay']);
+    expect(harness.registered.map(({ meta }) => meta.id)).toEqual(['humanink-open-workbench', 'humanink-workbench-overlay']);
+    // The overlay component registers for the explicit footer trigger, but the
+    // workbench stays hidden until the user opens it.
+    expect(activeHumanInkClients().at(-1)!.controller.getState().isOpen).toBe(false);
 
     const SidebarAction = harness.registered[0]!.component as FunctionComponent<{ wide: boolean }>;
     const sidebarElement = SidebarAction({ wide: true }) as ReactElement<{ onClick: () => void }>;
     sidebarElement.props.onClick();
-    expect(plugin.controller.getState().isOpen).toBe(true);
+    expect(activeHumanInkClients().at(-1)!.controller.getState().isOpen).toBe(true);
 
-    plugin.dispose();
-    expect(harness.disposeSlot).toHaveBeenCalledOnce();
-    expect(harness.disposeTab).not.toHaveBeenCalled();
+    disposer();
+    // Both slot registrations (footer action + overlay) share the mock disposer.
+    expect(harness.disposeSlot).toHaveBeenCalledTimes(2);
   });
 
-  it('falls back to the legacy slot when betterSidebar is malformed', async () => {
+  it('survives a malformed betterSidebar and falls back safely', () => {
     const harness = createHarness({ betterSidebar: { registerTab: 'not-a-function' } });
-    const plugin = apply(harness.context, { api: createHumanInkFakeApi() });
-    await plugin.ready;
+    const disposer = apply(harness.context, { api: createHumanInkFakeApi() });
 
     expect(harness.registerTab).not.toHaveBeenCalled();
-    expect(harness.registered).toHaveLength(1);
-    plugin.dispose();
+    expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action', 'shell.overlay']);
+    disposer();
   });
 
-  it('dispose then re-apply never duplicates the tab registration (HMR contract)', async () => {
-    const harness = createHarness({});
-    const first = apply(harness.context, { api: createHumanInkFakeApi() });
-    await first.ready;
-    first.dispose();
+  it('dispose then re-apply never duplicates the tab registration (HMR contract)', () => {
+    const harness = createHarness();
+    (harness.context as { betterSidebar?: unknown }).betterSidebar = {
+      registerTab: harness.registerTab,
+      openTab: vi.fn(),
+      activateTab: vi.fn(),
+    };
+    const disposeFirst = apply(harness.context, { api: createHumanInkFakeApi() });
+    expect(harness.registerTab).toHaveBeenCalledTimes(1);
+    disposeFirst();
     expect(harness.disposeTab).toHaveBeenCalledOnce();
 
-    const second = apply(harness.context, { api: createHumanInkFakeApi() });
-    await second.ready;
+    apply(harness.context, { api: createHumanInkFakeApi() });
     expect(harness.registerTab).toHaveBeenCalledTimes(2);
     expect(harness.getDescriptor()?.id).toBe(HUMANINK_WORKBENCH_TAB_ID);
-    second.dispose();
+    activeHumanInkClients().at(-1)!.dispose();
     expect(harness.disposeTab).toHaveBeenCalledTimes(2);
   });
 
@@ -126,9 +157,8 @@ describe('DeepSeek Harness React client entry', () => {
       },
       connection: { rpc: { call } },
     } as unknown as HumanInkClientContext;
-    const plugin = apply(context);
-    await plugin.ready;
+    apply(context);
     expect(call).toHaveBeenCalledWith('/humanink', 'projects/list', {}, undefined);
-    plugin.dispose();
+    activeHumanInkClients().at(-1)!.dispose();
   });
 });

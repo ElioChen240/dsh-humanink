@@ -113,21 +113,29 @@ export function createHumanInkConnectionApi(rpc:HumanInkRpcClient):HumanInkClien
 }
 
 /**
- * Runtime-safe lookup for the optional dsh-better-sidebar service. Accepts any
- * structurally compatible host object and returns undefined (never throws) when
- * the service is missing or malformed, so plugin loading cannot crash on it.
+ * Runtime-safe lookup for the optional dsh-better-sidebar service. Prefers
+ * `ctx.get(name)` — the sanctioned accessor for services that are not declared
+ * in `inject` (property access would throw on DSH client runtimes). Returns
+ * undefined (never throws) when the service is missing or malformed, so plugin
+ * loading cannot crash on it.
  */
 export function resolveHumanInkBetterSidebar(context:HumanInkClientContext):BetterSidebarService | undefined {
-  const candidate=(context as { betterSidebar?:unknown }).betterSidebar as BetterSidebarService | undefined;
-  if(!candidate||typeof candidate!=='object') return undefined;
-  if(typeof candidate.registerTab!=='function'||typeof candidate.openTab!=='function') return undefined;
-  return candidate;
+  let candidate:unknown;
+  const get=(context as { get?: (name: string) => unknown }).get;
+  if(typeof get==='function') candidate=get.call(context,'betterSidebar');
+  else candidate=(context as { betterSidebar?:unknown }).betterSidebar;
+  const service=candidate as BetterSidebarService | undefined;
+  if(!service||typeof service!=='object') return undefined;
+  if(typeof service.registerTab!=='function'||typeof service.openTab!=='function') return undefined;
+  return service;
 }
 
 export interface HumanInkClientSlotOptions {
   /**
-   * The full-screen overlay is no longer a default entry. It only renders when
-   * a host explicitly opts in; the native Better Sidebar tab is the primary UI.
+   * Whether the legacy overlay component may be registered. It never renders
+   * on its own — `controller.open()` (the footer action click) is the only
+   * trigger — but without this registration the footer button would have
+   * nothing to open on hosts without Better Sidebar.
    */
   overlay?:boolean;
 }
