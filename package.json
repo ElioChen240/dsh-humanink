@@ -1,55 +1,55 @@
 {
-  "name": "dsh-humanink",
-  "private": false,
-  "version": "0.7.1",
-  "type": "module",
-  "packageManager": "pnpm@11.7.0",
-  "scripts": {
-    "build": "pnpm -r --if-present build",
-    "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "test:mvp": "pnpm --filter @humanink/core build && pnpm --filter @humanink/storage build && vitest run packages/humanink-harness/tests/mvp-workflow.test.ts packages/humanink-harness/tests/humanize-review-workflow.test.ts",
-    "prepare": "pnpm build && pnpm humanink:bundle",
-    "humanink:patch": "node scripts/create-cordis-patch.mjs",
-    "humanink:dev": "pnpm build && pnpm humanink:patch && dsh web --patch .humanink/cordis.patch.yml",
-    "humanink:bundle": "tsdown --config tsdown.config.ts"
-  },
-  "devDependencies": {
-    "tsdown": "0.22.14",
-    "typescript": "^5.7.2",
-    "vitest": "^3.2.4"
-  },
-  "main": "./dist/bundle/index.mjs",
-  "files": [
-    "dist/bundle",
-    "cordis.patch.yml",
-    "README.md",
-    "VERSION"
-  ],
-  "dependencies": {
-    "@deepseek-ai/schemastery": "3.18.2"
-  },
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar"
-      ]
-    }
-  },
-  "exports": {
-    ".": {
-      "default": "./dist/bundle/index.mjs"
-    },
-    "./client": {
-      "default": "./dist/bundle/client.js"
-    },
-    "./package.json": "./package.json"
-  }
+    "name":  "dsh-humanink",
+    "private":  false,
+    "version":  "0.7.2",
+    "type":  "module",
+    "packageManager":  "pnpm@11.7.0",
+    "scripts":  {
+                    "build":  "pnpm -r --if-present build",
+                    "test":  "pnpm -r --if-present test",
+                    "typecheck":  "pnpm -r --if-present typecheck",
+                    "test:mvp":  "pnpm --filter @humanink/core build \u0026\u0026 pnpm --filter @humanink/storage build \u0026\u0026 vitest run packages/humanink-harness/tests/mvp-workflow.test.ts packages/humanink-harness/tests/humanize-review-workflow.test.ts",
+                    "prepare":  "pnpm build \u0026\u0026 pnpm humanink:bundle",
+                    "humanink:patch":  "node scripts/create-cordis-patch.mjs",
+                    "humanink:dev":  "pnpm build \u0026\u0026 pnpm humanink:patch \u0026\u0026 dsh web --patch .humanink/cordis.patch.yml",
+                    "humanink:bundle":  "tsdown --config tsdown.config.ts"
+                },
+    "devDependencies":  {
+                            "tsdown":  "0.22.14",
+                            "typescript":  "^5.7.2",
+                            "vitest":  "^3.2.4"
+                        },
+    "main":  "./dist/bundle/index.mjs",
+    "files":  [
+                  "dist/bundle",
+                  "cordis.patch.yml",
+                  "README.md",
+                  "VERSION"
+              ],
+    "dependencies":  {
+                         "@deepseek-ai/schemastery":  "3.18.2"
+                     },
+    "dsh":  {
+                "bundle":  {
+                               "patch":  "./cordis.patch.yml"
+                           },
+                "client":  {
+                               "platform":  "web",
+                               "inject":  [
+                                              "@deepseek-ai/dsh-client-connection",
+                                              "@deepseek-ai/dsh-client-ui-renderer",
+                                              "@deepseek-ai/dsh-client-ui-layout",
+                                              "@deepseek-ai/dsh-client-ui-sidebar"
+                                          ]
+                           }
+            },
+    "exports":  {
+                    ".":  {
+                              "default":  "./dist/bundle/index.mjs"
+                          },
+                    "./client":  {
+                                     "default":  "./dist/bundle/client.js"
+                                 },
+                    "./package.json":  "./package.json"
+                }
 }

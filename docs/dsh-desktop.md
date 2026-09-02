@@ -1,16 +1,34 @@
-﻿# DSH Desktop 使用说明
+# DSH Desktop 使用说明
 
 `dsh-desktop` 使用普通 DSH profile 组合加载第三方插件。HumanInk 不依赖 Electron 私有 API：Host 侧使用标准 `dsh.bundle`，Browser 侧使用 `dsh.client`（`platform: "web"`）并导出 `./client`，因此 Desktop 不需要单独的客户端注册方式。
+当前 HumanInk GitHub 仓库为私有仓库。通过 GitHub 安装前，必须确保 DSH Desktop 当前 profile 使用的 Git 环境已经获得 `ElioChen240/dsh-humanink` 的读取权限；如果没有权限，推荐使用本地 tarball。
 
 ## 通过 Desktop 的内置终端安装
 
-如果 DSH Desktop 已提供当前 profile 的终端，在终端中执行：
+
+如果 DSH Desktop 已提供当前 profile 的终端，并且该终端已配置私有 GitHub 仓库访问权限，执行：
 
 ```powershell
 dsh plugin --profile <你的 profile> add github:ElioChen240/dsh-humanink#main
 ```
 
 推荐将 `#main` 替换为固定 release tag 或 commit。安装完成后，重启 DSH Desktop，使当前 profile 重新组合并加载 Browser client。
+
+## 没有 GitHub 权限时：本地 tarball 安装
+
+在仓库目录执行：
+
+```powershell
+npx --yes pnpm@11.7.0 pack
+```
+
+然后在 DSH Desktop 当前 profile 的终端执行：
+
+```powershell
+dsh plugin --profile <你的 profile> add <绝对路径>\dsh-humanink-0.7.2.tgz
+```
+
+安装完成后重启 DSH Desktop，再进入启动验证。
 
 ## 启动后验证
 

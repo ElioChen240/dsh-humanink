@@ -28,6 +28,7 @@ npx --yes pnpm@11.7.0 test:mvp
 ## 3. 一键安装为 Harness bundle
 
 DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `dsh.bundle` manifest 的 npm 组合包。HumanInk 根目录已经提供：
+注意：当前 GitHub 仓库是私有仓库。GitHub 源码安装要求 DSH Desktop 当前 profile 已具备该仓库的访问凭据；否则请先在本地构建 tarball，再从本地路径安装。
 
 - `main`：指向构建后的插件入口；
 - `files`：只发布运行所需的构建产物和 patch；
@@ -35,7 +36,7 @@ DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `d
 - `dsh.client`：加载 Browser client，在 dsh web 左侧提供 HumanInk 入口；
 - `prepare`：从 GitHub 源码安装时先构建 Core、Storage 和 Harness。
 
-Harness CLI 已安装时，直接执行：
+如果当前环境已具备私有仓库访问权限，Harness CLI 或 DSH Desktop 的内置终端可以执行：
 
 ```powershell
 dsh plugin --profile humanink add github:ElioChen240/dsh-humanink#main
@@ -43,13 +44,13 @@ dsh --profile humanink --dump-config
 dsh --profile humanink web
 ```
 
-建议使用固定 commit 或 release tag，不要依赖会继续变化的分支。Git 源码安装会在本机执行 `prepare`，pnpm 10 及以上可能要求用户确认构建授权；只对可信源码授权。
+建议使用固定 commit 或 release tag，不要依赖会继续变化的分支。私有仓库认证由 Git/DSH Desktop 环境负责；Git 源码安装会在本机执行 `prepare`，pnpm 10 及以上可能要求用户确认构建授权；只对可信源码授权。
 
 如果要避免安装时构建，可以在可信环境执行 `pnpm pack`，再安装生成的 tarball：
 
 ```powershell
 npx --yes pnpm@11.7.0 pack
-dsh plugin --profile humanink add .\dsh-humanink-0.7.1.tgz
+dsh plugin --profile humanink add .\dsh-humanink-0.7.2.tgz
 ```
 
 当前 bundle 的默认配置由 Harness 标准 schema 提供：

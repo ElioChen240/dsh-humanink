@@ -1,45 +1,45 @@
 {
-  "name": "@humanink/client",
-  "version": "0.7.1",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./client": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "dependencies": {
-    "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-client-ui-layout": "0.0.1-rc.1",
-    "@deepseek-ai/dsh-client-ui-sidebar": "0.0.1-rc.1",
-    "@deepseek-ai/dsh-client-ui-slots": "0.0.1-rc.1",
-    "react": "18.2.0"
-  },
-  "devDependencies": {
-    "@types/react": "18.2.79",
-    "@types/react-dom": "18.2.25",
-    "react-dom": "18.2.0"
-  },
-  "dsh": {
-    "client": {
-      "inject": [
-        "@deepseek-ai/dsh-client-connection",
-        "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar"
-      ],
-      "platform": "web",
-      "immediately": true
-    }
-  }
+    "name":  "@humanink/client",
+    "version":  "0.7.2",
+    "private":  true,
+    "type":  "module",
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js"
+                          },
+                    "./client":  {
+                                     "types":  "./dist/index.d.ts",
+                                     "import":  "./dist/index.js"
+                                 }
+                },
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.build.json",
+                    "test":  "vitest run",
+                    "typecheck":  "tsc -p tsconfig.json --noEmit"
+                },
+    "dependencies":  {
+                         "@deepseek-ai/cordis":  "4.0.2",
+                         "@deepseek-ai/dsh-client-ui-layout":  "0.0.1-rc.1",
+                         "@deepseek-ai/dsh-client-ui-sidebar":  "0.0.1-rc.1",
+                         "@deepseek-ai/dsh-client-ui-slots":  "0.0.1-rc.1",
+                         "react":  "18.2.0"
+                     },
+    "devDependencies":  {
+                            "@types/react":  "18.2.79",
+                            "@types/react-dom":  "18.2.25",
+                            "react-dom":  "18.2.0"
+                        },
+    "dsh":  {
+                "client":  {
+                               "inject":  [
+                                              "@deepseek-ai/dsh-client-connection",
+                                              "@deepseek-ai/dsh-client-ui-renderer",
+                                              "@deepseek-ai/dsh-client-ui-layout",
+                                              "@deepseek-ai/dsh-client-ui-sidebar"
+                                          ],
+                               "platform":  "web",
+                               "immediately":  true
+                           }
+            }
 }

@@ -1,29 +1,29 @@
 {
-  "name": "@humanink/harness",
-  "version": "0.7.1",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "test": "pnpm --filter @humanink/core build && pnpm --filter @humanink/storage build && vitest run",
-    "typecheck": "pnpm --filter @humanink/core build && pnpm --filter @humanink/storage build && tsc -p tsconfig.json --noEmit"
-  },
-  "dependencies": {
-    "@deepseek-ai/schemastery": "3.18.2",
-    "@humanink/core": "workspace:*",
-    "@humanink/storage": "workspace:*"
-  },
-  "humanink": {
-    "harnessCompatibility": {
-      "cordis": "4.0.2",
-      "commands": "0.0.1-rc.1",
-      "llm": "0.0.1-rc.1"
-    }
-  }
+    "name":  "@humanink/harness",
+    "version":  "0.7.2",
+    "private":  true,
+    "type":  "module",
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js"
+                          }
+                },
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.build.json",
+                    "test":  "pnpm --filter @humanink/core build \u0026\u0026 pnpm --filter @humanink/storage build \u0026\u0026 vitest run",
+                    "typecheck":  "pnpm --filter @humanink/core build \u0026\u0026 pnpm --filter @humanink/storage build \u0026\u0026 tsc -p tsconfig.json --noEmit"
+                },
+    "dependencies":  {
+                         "@deepseek-ai/schemastery":  "3.18.2",
+                         "@humanink/core":  "workspace:*",
+                         "@humanink/storage":  "workspace:*"
+                     },
+    "humanink":  {
+                     "harnessCompatibility":  {
+                                                  "cordis":  "4.0.2",
+                                                  "commands":  "0.0.1-rc.1",
+                                                  "llm":  "0.0.1-rc.1"
+                                              }
+                 }
 }

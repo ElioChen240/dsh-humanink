@@ -1,4 +1,8 @@
 # 变更记录
+## [0.7.2] - 2026-09-02
+
+- 修正文档，明确当前 GitHub 仓库为私有仓库，并补充 DSH Desktop 的凭据前置条件和本地 tarball 安装路径。
+
 ## [0.7.1] - 2026-09-02
 
 - 对齐 DSH Desktop 的普通第三方插件接入方式：继续使用标准 `dsh.bundle`、`dsh.client` 和 `./client` 导出，不引入 Electron 私有 API；
