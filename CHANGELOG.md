@@ -1,4 +1,10 @@
 # 变更记录
+## [0.7.1] - 2026-09-02
+
+- 对齐 DSH Desktop 的普通第三方插件接入方式：继续使用标准 `dsh.bundle`、`dsh.client` 和 `./client` 导出，不引入 Electron 私有 API；
+- 补充 DSH Desktop 安装、重启和真实宿主验收说明；
+- 增加桌面兼容性契约测试，防止 Client manifest 或 Electron 边界回归。
+
 ## [0.7.0] - 2026-09-02
 
 - 新增集成在 `dsh web` 内的 HumanInk 三栏 React 内容工作台；

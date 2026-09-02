@@ -1,6 +1,6 @@
 # HumanInk 使用文档
 
-本文说明 HumanInk 当前 MVP 的安装、dsh web UI、Harness 接入、命令流、任务管理、本地数据文件和故障排查。当前交付物是命令与 UI 共用数据的通用中文内容工作台，不包含独立产品演示页，也不绑定微信公众号、小红书、抖音、知乎等单一平台。
+本文说明 HumanInk 当前 MVP 的安装、dsh web / DSH Desktop UI、Harness 接入、命令流、任务管理、本地数据文件和故障排查。当前交付物是命令与 UI 共用数据的通用中文内容工作台，不包含独立产品演示页，也不绑定微信公众号、小红书、抖音、知乎等单一平台。
 
 ## 1. 前置条件
 
@@ -49,7 +49,7 @@ dsh --profile humanink web
 
 ```powershell
 npx --yes pnpm@11.7.0 pack
-dsh plugin --profile humanink add .\dsh-humanink-0.7.0.tgz
+dsh plugin --profile humanink add .\dsh-humanink-0.7.1.tgz
 ```
 
 当前 bundle 的默认配置由 Harness 标准 schema 提供：
@@ -63,9 +63,9 @@ dsh plugin --profile humanink add .\dsh-humanink-0.7.0.tgz
 | `maxAttempts` | `3` | 临时错误最大尝试次数。 |
 | `backoffMs` | `500` | 重试退避基准毫秒数。 |
 
-### dsh web 可视化工作台
+### dsh web / DSH Desktop UI
 
-启动 `dsh web` 后，在左侧栏点击 **HumanInk** 入口打开工作台。工作台不创建第二套数据存储，读取和写入与命令入口相同的 `.humanink/` 目录。
+启动 `dsh web`，或打开已安装 HumanInk 的 DSH Desktop profile 后，在左侧栏点击 **HumanInk** 入口打开工作台。工作台不创建第二套数据存储，读取和写入与命令入口相同的 `.humanink/` 目录。
 
 - **左栏**：新建文章、项目列表、版本历史和版本切换；
 - **中栏**：标题和 Markdown 正文编辑，支持编辑/预览切换、保存为新版本和导出；
@@ -83,7 +83,7 @@ workflow/run        tasks/list         tasks/cancel
 export/markdown
 ```
 
-工作台入口注册在 `sidebar.footer.action`，全屏工作台注册在 `shell.overlay`。Overlay 的直接根节点显式启用 `pointer-events: auto`。真实宿主浏览器验收需要可用的 `dsh web` CLI 和对应 Client runtime。
+工作台入口注册在 `sidebar.footer.action`，全屏工作台注册在 `shell.overlay`。Overlay 的直接根节点显式启用 `pointer-events: auto`。DSH Desktop 按普通 DSH Web client 模块图发现该插件，不需要单独的 Electron 注册 API。真实宿主窗口验收需要可用的 DSH Desktop/Harness runtime。安装与排障步骤见 [`docs/dsh-desktop.md`](dsh-desktop.md)。
 
 ## 4. Harness 接入
 

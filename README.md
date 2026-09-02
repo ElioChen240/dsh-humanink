@@ -99,13 +99,13 @@ node_modules\.bin\vitest.cmd run packages\humanink-storage\tests
 node_modules\.bin\vitest.cmd run packages\humanink-harness\tests
 ```
 
-## dsh web 可视化工作台
+## dsh web / DSH Desktop UI
 
-安装 Bundle 后，在 `dsh web` 左侧栏点击 **HumanInk**，即可打开正式的三栏内容工作台：左侧管理项目和版本，中间编辑/预览正文，右侧执行标题、简报、大纲、初稿、人味化和发布前复核。UI 与 `/humanink-*` 命令共用同一套 JSONL 数据、版本链和任务运行时。
+安装 Bundle 后，在 `dsh web` 或 DSH Desktop 当前 profile 的左侧栏点击 **HumanInk**，即可打开正式的三栏内容工作台：左侧管理项目和版本，中间编辑/预览正文，右侧执行标题、简报、大纲、初稿、人味化和发布前复核。UI 与 `/humanink-*` 命令共用同一套 JSONL 数据、版本链和任务运行时。
 
 UI 通过官方 Connection 的 `/humanink` RPC 通道接入，并使用 `sidebar.footer.action` 与 `shell.overlay` Slot；不会覆盖 Harness 私有 DOM。AI 动作和手工保存都创建新版本，不静默覆盖当前内容。导出 Markdown、取消任务和切换历史版本均可在工作台完成。
 
-> 当前仓库已生成符合 lazy-CJS closure 形状的 `dist/bundle/client.js`，但真实 `dsh web` 浏览器加载仍需在安装了对应 Harness CLI 和官方 Client 运行时的环境中验收。
+> 当前仓库已生成符合 lazy-CJS closure 形状的 `dist/bundle/client.js`。DSH Desktop 使用同一套标准 `dsh.client` 与 `./client` 接入，不需要 Electron 私有 API；真实窗口加载仍需在安装了对应 Desktop/Harness runtime 的环境中验收。详见 [`docs/dsh-desktop.md`](docs/dsh-desktop.md)。
 
 ## Harness 接入
 

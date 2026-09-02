@@ -837,12 +837,12 @@ ContentProject
 - 每个实现任务遵守仓库 `AGENTS.md`：修改前检查 Git，完成后自测、更新版本、记录变更并提交 Git 版本。
 
 
-## dsh web Client UI（0.7.0）
+## dsh web / DSH Desktop Client UI (0.7.1)
 
-HumanInk 的正式可视化入口位于 `dsh web`，由 `packages/humanink-client` 提供 Browser client，由 `packages/humanink-harness` 提供 Host facade 和 Connection RPC。根 Bundle 同时提供 Host `.` 与 Browser `./client` 入口，`dsh.client` manifest 声明 Connection、UI renderer、layout 和 sidebar 依赖。
+HumanInk 的正式可视化入口位于 `dsh web` 或 DSH Desktop，由 `packages/humanink-client` 提供 Browser client，由 `packages/humanink-harness` 提供 Host facade 和 Connection RPC。根 Bundle 同时提供 Host `.` 与 Browser `./client` 入口，`dsh.client` manifest 声明 Connection、UI renderer、layout 和 sidebar 依赖。
 
 Host facade 只编排现有 `HumanInkApplication`、`ContentProjectService`、`ContentRepository` 和 `TaskRuntime`，不复制领域规则。项目列表、版本详情、人工保存、恢复、工作流、任务和 Markdown 导出均通过独立 `/humanink` channel 传输。
 
 Browser UI 通过两个官方 Slot 接入：`sidebar.footer.action` 提供打开按钮，`shell.overlay` 提供三栏全屏工作台。Overlay 容器由 Harness click-through，工作台根节点恢复 pointer events。AI 产出和人工保存遵循不可变版本链，UI 只负责交互和呈现。
 
-真实宿主验收要求当前机器具备 `dsh web` CLI、对应 Client runtime 和可用 LLM provider；源码单测、类型检查、Bundle 形状检查不能替代该浏览器集成验收。
+真实宿主验收要求当前机器具备 `dsh web` CLI 或 DSH Desktop、对应 Client runtime 和可用 LLM provider；源码单测、类型检查、Bundle 形状检查不能替代该浏览器集成验收。DSH Desktop 复用普通 `dsh.bundle` 与 `dsh.client` 模块图，不需要 Electron 私有 API。
