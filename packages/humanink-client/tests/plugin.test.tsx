@@ -62,8 +62,8 @@ describe('DeepSeek Harness React client entry', () => {
 
     expect(harness.registerTab).toHaveBeenCalledOnce();
     expect(harness.getDescriptor()).toMatchObject({ id: HUMANINK_WORKBENCH_TAB_ID, title: 'HumanInk' });
-    expect(harness.registered).toEqual([]);
-    activeHumanInkClients().at(-1)!.dispose();
+    await activeHumanInkClients().at(-1)!.ready;
+    expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action', 'shell.overlay']);
   });
 
   it('applies as a Cordis plugin: returns a disposer, never an object', async () => {
@@ -94,9 +94,9 @@ describe('DeepSeek Harness React client entry', () => {
       single: true,
     });
     // The native tab replaces the legacy slot entries entirely.
-    expect(harness.registered).toEqual([]);
-    disposer();
-    expect(harness.disposeTab).toHaveBeenCalledOnce();
+    // The native tab coexists with the official footer entry.
+    await activeHumanInkClients().at(-1)!.ready;
+    expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action', 'shell.overlay']);
   });
 
   it('falls back to the footer action when Better Sidebar is absent', async () => {
@@ -104,9 +104,9 @@ describe('DeepSeek Harness React client entry', () => {
     const disposer = apply(harness.context, { api: createHumanInkFakeApi() });
 
     expect(harness.registerTab).not.toHaveBeenCalled();
-    expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action', 'shell.overlay']);
-    expect(harness.registered.map(({ meta }) => meta.id)).toEqual(['humanink-open-workbench', 'humanink-workbench-overlay']);
-    // The overlay component registers for the explicit footer trigger, but the
+    await activeHumanInkClients().at(-1)!.ready;
+    expect(harness.registered.map(({ meta }) => meta.id)).toEqual(['humanink-open-workbench', 'humanink-content-inspector:project-tea']);
+    expect(harness.registered.map(({ meta }) => meta.id)).toEqual(['humanink-open-workbench', 'humanink-content-inspector:project-tea']);
     // workbench stays hidden until the user opens it.
     expect(activeHumanInkClients().at(-1)!.controller.getState().isOpen).toBe(false);
 
@@ -120,13 +120,13 @@ describe('DeepSeek Harness React client entry', () => {
     expect(harness.disposeSlot).toHaveBeenCalledTimes(2);
   });
 
-  it('survives a malformed betterSidebar and falls back safely', () => {
+  it('survives a malformed betterSidebar and falls back safely', async () => {
     const harness = createHarness({ betterSidebar: { registerTab: 'not-a-function' } });
     const disposer = apply(harness.context, { api: createHumanInkFakeApi() });
 
     expect(harness.registerTab).not.toHaveBeenCalled();
+    await activeHumanInkClients().at(-1)!.ready;
     expect(harness.registered.map(({ meta }) => meta.name)).toEqual(['sidebar.footer.action', 'shell.overlay']);
-    disposer();
   });
 
   it('dispose then re-apply never duplicates the tab registration (HMR contract)', () => {

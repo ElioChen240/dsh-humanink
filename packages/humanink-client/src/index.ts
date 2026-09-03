@@ -1,8 +1,9 @@
 import type { HumanInkClientApi } from './api.js';
+import { createElement } from 'react';
 import { HumanInkWorkbenchController } from './controller.js';
 import { registerHumanInkClientSlots, resolveHumanInkBetterSidebar, type HumanInkClientContext } from './host-adapter.js';
 import { registerHumanInkBetterSidebarAdapter, type BetterSidebarService, type HumanInkWorkbenchTabComponent } from './better-sidebar-adapter.js';
-import { createHumanInkNativeTab } from './native-workbench.js';
+import { HumanInkSidebarRoot, registerHumanInkNativeShell } from './sidebar/HumanInkSidebarRoot.js';
 import { createHumanInkWorkbenchRemoteClient } from './remote/client.js';
 
 /**
@@ -52,40 +53,24 @@ export function apply(context: HumanInkClientContext, options: HumanInkClientOpt
   const controller = new HumanInkWorkbenchController(api);
   const disposers: Array<() => void> = [];
 
-  const registerNativeTab = (service: BetterSidebarService): boolean => {
-    try {
-      const tab: HumanInkWorkbenchTabComponent = createHumanInkNativeTab(controller);
-      // Registration returns a deduped disposer; the disposer returned by
-      // apply() hands it to Cordis, so HMR reloads and plugin unloads never
-      // duplicate the `humanink:workbench` tab.
-      const adapter = registerHumanInkBetterSidebarAdapter(service, tab);
-      disposers.push(adapter.dispose);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const registerFallback = (): void => {
-    try {
-      // Footer action plus the legacy overlay component. The overlay itself
-      // stays hidden until the footer action triggers controller.open(), so
-      // nothing pops up automatically.
-      disposers.push(registerHumanInkClientSlots(context, controller, { overlay: true }));
-    } catch {
-      // Even without the legacy slot service the plugin stays loaded.
-    }
-  };
-
+  let nativeAdapter: ReturnType<typeof registerHumanInkBetterSidebarAdapter> | undefined;
   const betterSidebar = resolveHumanInkBetterSidebar(context);
   if (betterSidebar) {
-    if (!registerNativeTab(betterSidebar)) registerFallback();
-  } else {
-    // Better Sidebar is absent (or malformed). Degrade immediately to the
-    // footer action so the plugin always has exactly one usable entry.
-    registerFallback();
+    try {
+      nativeAdapter = registerHumanInkBetterSidebarAdapter(betterSidebar, ({ scope, visible }) => (
+        createElement(HumanInkSidebarRoot, { controller, visible })
+      ));
+      disposers.push(() => nativeAdapter?.dispose());
+    } catch {
+      nativeAdapter = undefined;
+    }
   }
 
+  // The official DSH footer entry is always present. Better Sidebar only
+  // changes where it opens the workbench; it is never a startup dependency.
+  disposers.push(registerHumanInkNativeShell(context, controller, {
+    onOpen: () => nativeAdapter?.open() ?? controller.open(),
+  }));
   const ready = Promise.race([
     controller.initialize(),
     new Promise<void>((resolve) => { setTimeout(resolve, READY_TIMEOUT_MS); }),
@@ -112,5 +97,8 @@ export * from './host-adapter.js';
 export * from './native-workbench.js';
 export * from './remote/client.js';
 export * from './persistence.js';
+export * from './sidebar/HumanInkSidebarRoot.js';
+export * from './sidebar/ContentSidebarPanel.js';
+export * from './inspector/ContentInspector.js';
 export * from './react-ui.js';
 export * from './theme.js';

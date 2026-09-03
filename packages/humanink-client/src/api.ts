@@ -2,6 +2,9 @@ export type WorkflowAction = 'titles' | 'brief' | 'outline' | 'draft' | 'humaniz
 export type TaskStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 export type ContentVersionKind = 'source' | 'topic' | 'title' | 'brief' | 'outline' | 'draft' | 'humanized' | 'review' | 'restored';
 export type CreatedBy = 'user' | 'llm' | 'system';
+export type CapabilityStatus = 'ready' | 'missing' | 'unsupported' | 'error';
+export interface CapabilityState { readonly state: CapabilityStatus; readonly reason?: string; readonly action?: string; }
+export interface CapabilityReport { readonly core: CapabilityState; readonly storage: CapabilityState; readonly contentLibrary: CapabilityState; readonly llm: CapabilityState; readonly remote: CapabilityState; readonly credentials: CapabilityState; }
 
 export interface ProjectSummary {
   id: string;
@@ -60,4 +63,5 @@ export interface HumanInkClientApi {
   listTasks(projectId?: string, signal?: AbortSignal): Promise<WorkflowTask[]>;
   cancelTask(taskId: string, signal?: AbortSignal): Promise<boolean>;
   exportMarkdown(versionId: string, signal?: AbortSignal): Promise<string>;
+  getCapabilities?(signal?: AbortSignal): Promise<CapabilityReport>;
 }

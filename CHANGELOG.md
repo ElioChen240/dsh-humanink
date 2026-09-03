@@ -1,3 +1,10 @@
+## [0.8.9] - 2026-09-03
+
+- 新增原生内容侧栏与动态内容检查器：官方 DSH 入口始终可用，Better Sidebar 仅作为可选增强，不再替换官方侧栏。
+- 内容检查器按 selectedContentId 动态注册和卸载 shell.overlay，取消选择或切换内容时释放旧注册。
+- 新增内容搜索、版本编辑、保存、人味化和复核入口，并对缺失能力显示降级提示而不阻断内容导航。
+- 增加 HMR 去重、mount/unmount、动态 overlay 和能力降级测试。
+
 ## [0.8.8] - 2026-09-03
 
 - 新增 Client Typed Remote 适配器，将 /humanink/workbench 的内容、版本、工作流与任务接口映射到 HumanInk UI API。

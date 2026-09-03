@@ -1,4 +1,4 @@
-import type { ContentVersion, ContentVersionKind, CreatedBy, HumanInkClientApi, ProjectDetails, ProjectSummary, RunWorkflowInput, SaveVersionInput, TaskStatus, WorkflowAction, WorkflowTask } from '../api.js';
+import type { CapabilityReport, ContentVersion, ContentVersionKind, CreatedBy, HumanInkClientApi, ProjectDetails, ProjectSummary, RunWorkflowInput, SaveVersionInput, TaskStatus, WorkflowAction, WorkflowTask } from '../api.js';
 import { HumanInkApiError, sanitizeErrorText } from '../errors.js';
 
 export const HUMANINK_WORKBENCH_REMOTE_CHANNEL = '/humanink/workbench' as const;
@@ -66,6 +66,7 @@ export function createHumanInkWorkbenchRemoteClient(rpc: HumanInkWorkbenchRpcCli
     async runWorkflow(input: RunWorkflowInput, signal?: AbortSignal) { const task = mapTask(await call<unknown>('startAction', workflowPayload(input), signal), input.workflow); taskCache.set(task.id, task); return task; },
     async listTasks(projectId?: string, signal?: AbortSignal) { const tasks = await Promise.all([...taskCache.values()].filter((task) => projectId === undefined || task.projectId === projectId).map(async (task) => { const current = await call<unknown>('getTask', { taskId: task.id }, signal); return current === null ? task : mapTask(current, task.action); })); tasks.forEach((task) => taskCache.set(task.id, task)); return tasks; },
     async cancelTask(taskId: string, signal?: AbortSignal) { const result = await call<boolean>('cancelTask', { taskId }, signal); const cached = taskCache.get(taskId); if (result && cached) taskCache.set(taskId, { ...cached, status: 'cancelled' }); return result; },
+    async getCapabilities(signal?: AbortSignal) { return call<CapabilityReport>('getCapabilities', {}, signal); },
     async exportMarkdown(_versionId: string, _signal?: AbortSignal) { throw new HumanInkApiError('Markdown 导出暂未接入 Workbench Remote', 'UNSUPPORTED'); },
   };
 }
