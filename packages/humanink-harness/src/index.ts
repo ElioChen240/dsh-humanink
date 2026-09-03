@@ -1,3 +1,5 @@
+export * from './remote/contract.js';
+export * from './remote/host.js';
 export * from './capabilities/capability-service.js';
 export * from './application/contracts.js';
 export * from './application/workbench-service.js';

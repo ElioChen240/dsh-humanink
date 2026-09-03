@@ -1,15 +1,16 @@
 import type { ContentProject, ContentVersion, ContentVersionSummary } from '@humanink/core';
 import type { HumanInkApplication, ProjectCreationResult } from '../runtime/humanink-application.js';
 import type { TaskRecord } from '../runtime/task-runtime.js';
-import type { CapabilityReport, ContentDetail, ContentSummary, CreateContentInput, ListContentsInput, SaveVersionInput, StartActionInput } from './contracts.js';
+import type { CapabilityReport, ContentDetail, ContentSummary, CreateContentInput, ListContentsInput, SaveVersionInput, StartActionInput, WorkbenchSettings } from './contracts.js';
 
 type WorkbenchApplication = Pick<HumanInkApplication,
   'listProjects' | 'getProject' | 'listVersions' | 'getVersion' | 'createProject' |
   'createDerivedVersion' | 'generateTitles' | 'generateBrief' | 'generateOutline' |
-  'generateDraft' | 'humanizeContent' | 'reviewContent' | 'getTask'>;
+  'generateDraft' | 'humanizeContent' | 'reviewContent' | 'getTask' | 'cancelTask'>;
 
 export interface WorkbenchCapabilitySource { inspect(signal?: AbortSignal): Promise<CapabilityReport>; }
-export interface HumanInkWorkbenchServiceDependencies { readonly application: WorkbenchApplication; readonly capabilityService?: WorkbenchCapabilitySource; }
+export interface WorkbenchSettingsSource { getSettings(signal?: AbortSignal): Promise<WorkbenchSettings>; setLibraryRoot(libraryRoot: string, signal?: AbortSignal): Promise<WorkbenchSettings>; setWritingProfile(writingProfile: string, signal?: AbortSignal): Promise<WorkbenchSettings>; }
+export interface HumanInkWorkbenchServiceDependencies { readonly application: WorkbenchApplication; readonly capabilityService?: WorkbenchCapabilitySource; readonly settings?: WorkbenchSettingsSource; readonly initialLibraryRoot?: string; }
 
 function requireId(value: string | undefined, field: string): string {
   if (value === undefined || value.trim().length === 0) throw new TypeError(`${field} is required for this action`);
@@ -18,6 +19,13 @@ function requireId(value: string | undefined, field: string): string {
 
 function throwIfAborted(signal?: AbortSignal): void { signal?.throwIfAborted(); }
 
+
+export class WorkbenchCapabilityUnavailableError extends Error {
+  readonly code = 'CAPABILITY_MISSING';
+  constructor(readonly capability: string) {
+    super(`HumanInk capability is unavailable: ${capability}.`);
+  }
+}
 export class HumanInkWorkbenchService {
   private revision = 0;
   constructor(private readonly dependencies: HumanInkWorkbenchServiceDependencies) {}
@@ -81,6 +89,10 @@ export class HumanInkWorkbenchService {
   }
 
   async getTask(taskId: string, signal?: AbortSignal): Promise<TaskRecord | null> { throwIfAborted(signal); return this.dependencies.application.getTask(taskId); }
+  async cancelTask(taskId: string, signal?: AbortSignal): Promise<boolean> { throwIfAborted(signal); return this.dependencies.application.cancelTask(taskId); }
+  async getSettings(signal?: AbortSignal): Promise<WorkbenchSettings> { throwIfAborted(signal); return this.dependencies.settings?.getSettings(signal) ?? { ...(this.dependencies.initialLibraryRoot === undefined ? {} : { libraryRoot: this.dependencies.initialLibraryRoot }), writingProfile: '' }; }
+  async setLibraryRoot(libraryRoot: string, signal?: AbortSignal): Promise<WorkbenchSettings> { throwIfAborted(signal); if (this.dependencies.settings === undefined) throw new WorkbenchCapabilityUnavailableError('settings'); return this.dependencies.settings.setLibraryRoot(libraryRoot, signal); }
+  async setWritingProfile(writingProfile: string, signal?: AbortSignal): Promise<WorkbenchSettings> { throwIfAborted(signal); if (this.dependencies.settings === undefined) throw new WorkbenchCapabilityUnavailableError('settings'); return this.dependencies.settings.setWritingProfile(writingProfile, signal); }
   async getCapabilities(signal?: AbortSignal): Promise<CapabilityReport> {
     throwIfAborted(signal);
     if (this.dependencies.capabilityService !== undefined) return this.dependencies.capabilityService.inspect(signal);

@@ -12,3 +12,4 @@ export type CapabilityStatus = 'ready' | 'missing' | 'unsupported' | 'error';
 export interface CapabilityState { readonly state: CapabilityStatus; readonly reason?: string; readonly action?: string; }
 export interface CapabilityReport { readonly core: CapabilityState; readonly storage: CapabilityState; readonly contentLibrary: CapabilityState; readonly llm: CapabilityState; readonly remote: CapabilityState; readonly credentials: CapabilityState; }
 export type WorkbenchTask = TaskRecord;
+export interface WorkbenchSettings { readonly libraryRoot?: string; readonly writingProfile: string; }

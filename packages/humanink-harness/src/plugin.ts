@@ -10,6 +10,8 @@ import {
 } from '@humanink/core';
 import { FileContentRepository } from '@humanink/storage';
 import { resolve } from 'node:path';
+import { HumanInkWorkbenchService } from './application/workbench-service.js';
+import { CapabilityService } from './capabilities/capability-service.js';
 import { registerHumanInkCommands, type HarnessCommandRegistryLike } from './commands/index.js';
 import { HumanInkApplication } from './runtime/humanink-application.js';
 import { TaskRuntime } from './runtime/task-runtime.js';
@@ -17,6 +19,7 @@ import { FileTaskStore } from './services/file-task-store.js';
 import { HarnessLlmProvider, type HarnessLlmServiceLike } from './services/llm-provider.js';
 import { ResilientLlmProvider } from './services/resilient-llm-provider.js';
 import { HumanInkUiFacade } from './ui/humanink-ui-facade.js';
+import { registerHumanInkWorkbenchRemote } from './remote/host.js';
 import { registerHumanInkUiRpc, type HumanInkConnectionLike } from './ui/humanink-ui-transport.js';
 
 export const name = 'dsh-humanink';
@@ -109,10 +112,22 @@ export function apply(ctx: HumanInkHarnessContext, config: HumanInkHarnessConfig
     catalog: application,
     projectService: application,
   });
+  const dataDir = resolve(config.dataDir === undefined ? '.humanink' : requireText(config.dataDir, 'dataDir'));
+  const workbench = new HumanInkWorkbenchService({
+    application,
+    initialLibraryRoot: dataDir,
+    capabilityService: new CapabilityService({
+      libraryRoot: dataDir,
+      llm: () => true,
+      remote: () => ctx.connection !== undefined,
+    }),
+  });
   const disposeRpc = ctx.connection === undefined ? undefined : registerHumanInkUiRpc(ctx.connection, facade);
+  const disposeWorkbenchRemote = ctx.connection === undefined ? undefined : registerHumanInkWorkbenchRemote(ctx.connection, workbench);
 
   return () => {
     disposeCommands();
+    if (disposeWorkbenchRemote !== undefined) void disposeWorkbenchRemote();
     if (disposeRpc !== undefined) void disposeRpc();
   };
 }

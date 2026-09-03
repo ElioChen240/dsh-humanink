@@ -1,0 +1,5 @@
+export const HUMANINK_WORKBENCH_INVOCATIONS = ['listContents', 'getContent', 'createContent', 'saveVersion', 'startAction', 'getTask', 'cancelTask', 'getCapabilities', 'getRevision', 'getSettings', 'setLibraryRoot', 'setWritingProfile'] as const;
+export type HumanInkWorkbenchInvocation = typeof HUMANINK_WORKBENCH_INVOCATIONS[number];
+export type HumanInkRemoteErrorCode = 'INVALID_INPUT' | 'NOT_FOUND' | 'CONFLICT' | 'CAPABILITY_MISSING' | 'LLM_PROVIDER_FAILED' | 'STORAGE_FAILED' | 'TASK_FAILED' | 'REQUEST_CANCELLED' | 'INTERNAL';
+export interface HumanInkRemoteError { readonly code: HumanInkRemoteErrorCode; readonly message: string; readonly retryable: boolean; readonly detail?: Readonly<Record<string, unknown>>; }
+export type HumanInkRemoteResult<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: HumanInkRemoteError };

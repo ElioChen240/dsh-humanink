@@ -22,8 +22,8 @@ export interface HumanInkUiRouteFacade {
 export interface HumanInkConnectionLike {
   readonly rpc: {
     handle(
-      channel: '/humanink',
-      handler: (endpoint: string, payload: unknown, signal: AbortSignal) => Promise<HumanInkRpcResult<unknown>>,
+      channel: string,
+      handler: (endpoint: string, payload: unknown, signal: AbortSignal) => Promise<unknown>,
     ): () => Promise<void>;
   };
 }

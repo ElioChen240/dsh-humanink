@@ -25,6 +25,7 @@ function application() {
     humanizeContent: vi.fn(() => task),
     reviewContent: vi.fn(() => task),
     getTask: vi.fn(() => task),
+    cancelTask: vi.fn(() => true),
   };
 }
 

@@ -1,5 +1,12 @@
 # 变更记录
 
+## [0.8.6] - 2026-09-03
+
+- 新增独立的 `/humanink/workbench` Typed Remote 通道，公开 12 个 MVP invocation，并统一返回可判定的成功/错误结果。
+- Remote Host 负责输入校验、取消信号透传、未找到映射和内部错误脱敏；旧 `/humanink` Connection RPC 继续保留为兼容层。
+- 工作台门面补充任务取消与设置读取/写入边界；未接入持久化设置源时明确报告能力缺失，不伪装配置已保存。
+- Harness 插件同时注册兼容 RPC 与新 Workbench Remote，并在卸载时释放两个 disposer。
+
 ## [0.8.5] - 2026-09-03
 
 - 新增只读 `CapabilityService`，统一报告 Core、Storage、内容目录、Harness LLM、Client Remote 和 Credentials 状态。

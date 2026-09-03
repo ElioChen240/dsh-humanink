@@ -11,7 +11,7 @@ afterEach(() => roots.splice(0).forEach((root) => rmSync(root, { recursive: true
 function application() {
   return {
     listProjects: vi.fn(async () => []), getProject: vi.fn(async () => null), listVersions: vi.fn(async () => []), getVersion: vi.fn(async () => null),
-    createProject: vi.fn(), createDerivedVersion: vi.fn(), generateTitles: vi.fn(), generateBrief: vi.fn(), generateOutline: vi.fn(), generateDraft: vi.fn(), humanizeContent: vi.fn(), reviewContent: vi.fn(), getTask: vi.fn(() => null),
+    createProject: vi.fn(), createDerivedVersion: vi.fn(), generateTitles: vi.fn(), generateBrief: vi.fn(), generateOutline: vi.fn(), generateDraft: vi.fn(), humanizeContent: vi.fn(), reviewContent: vi.fn(), getTask: vi.fn(() => null), cancelTask: vi.fn(() => false),
   };
 }
 

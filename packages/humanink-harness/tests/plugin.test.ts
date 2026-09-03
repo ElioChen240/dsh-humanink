@@ -216,6 +216,7 @@ describe('HumanInk Harness plugin', () => {
     roots.push(dataDir);
     const registrations: Array<{ name: string }> = [];
     let disposed = 0;
+    const rpcChannels: string[] = [];
     const ctx = {
       commands: {
         register(definition: { name: string }) {
@@ -227,7 +228,7 @@ describe('HumanInk Harness plugin', () => {
       connection: {
         rpc: {
           handle(channel: string) {
-            expect(channel).toBe('/humanink');
+            rpcChannels.push(channel);
             return async () => { disposed += 1; };
           },
         },
@@ -255,8 +256,10 @@ describe('HumanInk Harness plugin', () => {
       'humanink-export',
     ]));
 
+    expect(rpcChannels).toEqual(['/humanink', '/humanink/workbench']);
+
     dispose();
-    await vi.waitFor(() => { expect(disposed).toBe(registrations.length + 1); });
+    await vi.waitFor(() => { expect(disposed).toBe(registrations.length + 2); });
   });
 
   it('injects humanize and review capabilities from the plugin factory', async () => {
