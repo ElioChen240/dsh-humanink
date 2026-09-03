@@ -14,7 +14,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-export interface HumanInkRpcClient { call(channel:'/humanink', endpoint:string, payload:object, signal?:AbortSignal):Promise<unknown>; }
+export interface HumanInkRpcClient { call(channel:string, endpoint:string, payload:object, signal?:AbortSignal):Promise<unknown>; }
 export interface SlotRegistration { name:'sidebar.footer.action'|'shell.overlay'; id:string; order:number; label:string; }
 export interface HumanInkSlotsService {
   inject(name:SlotRegistration['name'], setup:()=>()=>void):void;

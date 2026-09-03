@@ -51,13 +51,13 @@ export interface RunWorkflowInput {
 
 /** Browser-side boundary; only an adapter or test fake may implement it. */
 export interface HumanInkClientApi {
-  listProjects(): Promise<ProjectSummary[]>;
-  getProject(projectId: string): Promise<ProjectDetails>;
-  createProject(title: string, sourceBody?: string): Promise<ProjectSummary>;
-  saveVersion(input: SaveVersionInput): Promise<ContentVersion>;
-  restoreVersion(projectId: string, versionId: string): Promise<ContentVersion>;
-  runWorkflow(input: RunWorkflowInput): Promise<WorkflowTask>;
-  listTasks(projectId?: string): Promise<WorkflowTask[]>;
-  cancelTask(taskId: string): Promise<boolean>;
-  exportMarkdown(versionId: string): Promise<string>;
+  listProjects(signal?: AbortSignal): Promise<ProjectSummary[]>;
+  getProject(projectId: string, signal?: AbortSignal): Promise<ProjectDetails>;
+  createProject(title: string, sourceBody?: string, signal?: AbortSignal): Promise<ProjectSummary>;
+  saveVersion(input: SaveVersionInput, signal?: AbortSignal): Promise<ContentVersion>;
+  restoreVersion(projectId: string, versionId: string, signal?: AbortSignal): Promise<ContentVersion>;
+  runWorkflow(input: RunWorkflowInput, signal?: AbortSignal): Promise<WorkflowTask>;
+  listTasks(projectId?: string, signal?: AbortSignal): Promise<WorkflowTask[]>;
+  cancelTask(taskId: string, signal?: AbortSignal): Promise<boolean>;
+  exportMarkdown(versionId: string, signal?: AbortSignal): Promise<string>;
 }

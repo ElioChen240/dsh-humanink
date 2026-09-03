@@ -1,8 +1,9 @@
 import type { HumanInkClientApi } from './api.js';
 import { HumanInkWorkbenchController } from './controller.js';
-import { createHumanInkConnectionApi, registerHumanInkClientSlots, resolveHumanInkBetterSidebar, type HumanInkClientContext } from './host-adapter.js';
+import { registerHumanInkClientSlots, resolveHumanInkBetterSidebar, type HumanInkClientContext } from './host-adapter.js';
 import { registerHumanInkBetterSidebarAdapter, type BetterSidebarService, type HumanInkWorkbenchTabComponent } from './better-sidebar-adapter.js';
 import { createHumanInkNativeTab } from './native-workbench.js';
+import { createHumanInkWorkbenchRemoteClient } from './remote/client.js';
 
 /**
  * `betterSidebar` is deliberately NOT in `inject`. Cordis keeps a fiber
@@ -47,7 +48,7 @@ const READY_TIMEOUT_MS = 10_000;
  * instance is exposed through `activeHumanInkClients()` instead.
  */
 export function apply(context: HumanInkClientContext, options: HumanInkClientOptions = {}): () => void {
-  const api = options.api ?? createHumanInkConnectionApi(context.connection.rpc);
+  const api = options.api ?? createHumanInkWorkbenchRemoteClient(context.connection.rpc);
   const controller = new HumanInkWorkbenchController(api);
   const disposers: Array<() => void> = [];
 
@@ -109,5 +110,7 @@ export * from './errors.js';
 export * from './fake-api.js';
 export * from './host-adapter.js';
 export * from './native-workbench.js';
+export * from './remote/client.js';
+export * from './persistence.js';
 export * from './react-ui.js';
 export * from './theme.js';

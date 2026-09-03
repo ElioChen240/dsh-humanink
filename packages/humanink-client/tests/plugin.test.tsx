@@ -158,7 +158,7 @@ describe('DeepSeek Harness React client entry', () => {
       connection: { rpc: { call } },
     } as unknown as HumanInkClientContext;
     apply(context);
-    expect(call).toHaveBeenCalledWith('/humanink', 'projects/list', {}, undefined);
+    expect(call).toHaveBeenCalledWith('/humanink/workbench', 'listContents', {}, undefined);
     activeHumanInkClients().at(-1)!.dispose();
   });
 });

@@ -1,3 +1,10 @@
+## [0.8.8] - 2026-09-03
+
+- 新增 Client Typed Remote 适配器，将 /humanink/workbench 的内容、版本、工作流与任务接口映射到 HumanInk UI API。
+- 新增 UI 状态持久化白名单，仅保存选择内容、筛选关键词和侧栏宽度，不保存文章正文。
+- 增加 Remote 错误映射、AbortSignal 透传、任务状态刷新，以及 mount/unmount 和 localStorage 边界测试。
+- 明确当前 Remote 合同尚未提供恢复版本与 Markdown 导出 invocation，客户端对这两项返回 UNSUPPORTED，避免伪造成功。
+
 # 变更记录
 
 ## [0.8.7] - 2026-09-03
