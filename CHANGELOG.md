@@ -1,5 +1,11 @@
 # 变更记录
 
+## [0.8.3] - 2026-09-03
+
+- 新增统一 `HumanInkWorkbenchService` 与公开契约，为后续 Remote、Tools、Skill、Prompt 和 Client 共用同一应用边界。
+- 门面覆盖内容列表、内容详情、新建内容、保存人工版本、启动写作动作、任务查询、能力报告和单调 revision，并透传取消信号。
+- 继续复用现有 `HumanInkApplication`、内容仓库和任务运行时，不复制标题、写作、人味化或复核领域逻辑。
+
 ## [0.8.2] - 2026-09-03
 
 - 新增 `test:dsh-contract` 原生集成契约门禁，覆盖 Host disposer、可选 Connection、DSH Desktop Client 入口、Better Sidebar 可选降级和 Client 插件生命周期。
