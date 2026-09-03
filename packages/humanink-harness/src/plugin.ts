@@ -20,7 +20,9 @@ import { HumanInkUiFacade } from './ui/humanink-ui-facade.js';
 import { registerHumanInkUiRpc, type HumanInkConnectionLike } from './ui/humanink-ui-transport.js';
 
 export const name = 'dsh-humanink';
-export const inject = ['commands', 'llm', 'connection'] as const;
+// The browser Connection transport is optional. Requiring it here would keep
+// command-only or partially degraded hosts pending before apply() can register.
+export const inject = ['commands', 'llm'] as const;
 
 export interface HumanInkHarnessContext {
   readonly commands: HarnessCommandRegistryLike;

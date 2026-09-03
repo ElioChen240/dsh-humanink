@@ -46,6 +46,7 @@ class LegacyRuntimeRepository implements ContentRepository {
 
   createProject: ContentRepository['createProject'] = (input) => this.backing.createProject(input);
   getProject: ContentRepository['getProject'] = (projectId) => this.backing.getProject(projectId);
+  listProjects: ContentRepository['listProjects'] = () => this.backing.listProjects();
   updateProject: ContentRepository['updateProject'] = (project) => this.backing.updateProject(project);
   saveVersion: ContentRepository['saveVersion'] = (version) => this.backing.saveVersion(version);
   getVersion: ContentRepository['getVersion'] = (versionId) => this.backing.getVersion(versionId);

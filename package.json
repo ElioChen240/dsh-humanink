@@ -1,7 +1,7 @@
 {
     "name":  "dsh-humanink",
     "private":  false,
-    "version": "0.8.1",
+    "version": "0.8.2",
     "type":  "module",
     "packageManager":  "pnpm@11.7.0",
     "scripts":  {
@@ -9,6 +9,7 @@
                     "test":  "pnpm -r --if-present test",
                     "typecheck":  "pnpm -r --if-present typecheck",
                     "test:mvp":  "pnpm --filter @humanink/core build \u0026\u0026 pnpm --filter @humanink/storage build \u0026\u0026 vitest run packages/humanink-harness/tests/mvp-workflow.test.ts packages/humanink-harness/tests/humanize-review-workflow.test.ts",
+                    "test:dsh-contract":  "vitest run packages/humanink-harness/tests/dsh-native-contract.test.ts packages/humanink-client/tests/desktop-compatibility.test.ts packages/humanink-client/tests/plugin.test.tsx",
                     "prepare":  "pnpm build \u0026\u0026 pnpm humanink:bundle",
                     "humanink:patch":  "node scripts/create-cordis-patch.mjs",
                     "humanink:dev":  "pnpm build \u0026\u0026 pnpm humanink:patch \u0026\u0026 dsh web --patch .humanink/cordis.patch.yml",

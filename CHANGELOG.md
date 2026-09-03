@@ -1,5 +1,11 @@
 # 变更记录
 
+## [0.8.2] - 2026-09-03
+
+- 新增 `test:dsh-contract` 原生集成契约门禁，覆盖 Host disposer、可选 Connection、DSH Desktop Client 入口、Better Sidebar 可选降级和 Client 插件生命周期。
+- 将 Host `connection` 从硬注入改为可选能力，避免命令模式或无 Browser Connection 的宿主在插件应用前阻塞。
+- 修复既有测试替身缺少 `listProjects()` 以及 Client 契约测试缺少 Node 类型声明的问题，恢复完整 TypeScript 检查。
+
 ## [0.8.1] - 2026-09-03
 
 - 完成 HumanInk 2.0 重构设计基线：产品定位调整为集成在 DeepSeek Harness 中的本地 AI 内容生产工作台。

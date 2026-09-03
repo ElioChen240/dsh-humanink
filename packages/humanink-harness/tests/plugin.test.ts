@@ -241,7 +241,7 @@ describe('HumanInk Harness plugin', () => {
     });
 
     expect(name).toBe('dsh-humanink');
-    expect(inject).toEqual(['commands', 'llm', 'connection']);
+    expect(inject).toEqual(['commands', 'llm']);
     expect(registrations.map((item) => item.name)).toEqual(expect.arrayContaining([
       'humanink-create',
       'humanink-title',
