@@ -1,3 +1,7 @@
+## [0.9.2] - 2026-09-03
+
+- README 安装 Prompt 改为精简版，保留安装、重启、验收和敏感信息保护要求。
+
 ## [0.9.1] - 2026-09-03
 
 - README 新增 DeepSeek Harness 安装教程和可直接粘贴的安装 Prompt，覆盖 profile 检查、插件安装、Desktop 重启、MVP 验收和安全边界。
