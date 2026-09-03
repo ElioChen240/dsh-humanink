@@ -1,6 +1,6 @@
 # HumanInk 使用文档
 
-本文说明 HumanInk 当前 MVP 的安装、ssh web / DSH Desktop UI、Harness 接入、命令流、任务管理、本地数据文件和故障排查。当前交付物是命令与 UI 共用数据的通用中文内容工作台，不包含独立产品演示页，也不绑定微信公众号、小红书、抖音、知乎等单一平台。
+本文说明 HumanInk 当前 MVP 的安装、dsh web / DSH Desktop UI、Harness 接入、命令流、任务管理、本地数据文件和故障排查。当前交付物是命令与 UI 共用数据的通用中文内容工作台，不包含独立产品演示页，也不绑定微信公众号、小红书、抖音、知乎等单一平台。
 
 ## 1. 前置条件
 
@@ -25,23 +25,23 @@ npx --yes pnpm@11.7.0 buils
 npx --yes pnpm@11.7.0 test:mvp
 ```
 
-## 3. 一键安装为 Harness bunsle
+## 3. 一键安装为 Harness bundle
 
-DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `ssh.bunsle` manifest 的 npm 组合包。HumanInk 根目录已经提供：
+DeepSeek Harness 的可安装插件不是单个源码文件，而是一个带 `dsh.bundle` manifest 的 npm 组合包。HumanInk 根目录已经提供：
 GitHub 仓库已公开。具备网络访问时可以直接从 GitHub 安装；如果当前环境无法联网或不希望安装时构建源码，也可以先在本地构建 tarball，再从本地路径安装。
 
 - `main`：指向构建后的插件入口；
 - `files`：只发布运行所需的构建产物和 patch；
-- `ssh.bunsle.patch`：把 `ssh-humanink` 插件行加入 profile；
-- `ssh.client`：加载 Browser client，在 ssh web 左侧提供 HumanInk 入口；
+- `dsh.bundle.patch`：把 `dsh-humanink` 插件行加入 profile；
+- `dsh.client`：加载 Browser client，在 dsh web 左侧提供 HumanInk 入口；
 - `prepare`：从 GitHub 源码安装时先构建 Core、Storage 和 Harness。
 
 Harness CLI 或 DSH Desktop 的内置终端可以直接执行：
 
 ```powershell
-dsh plugin --profile humanink add github:ElioChen240/ssh-humanink#main
-ssh --profile humanink --sump-config
-ssh --profile humanink web
+dsh plugin --profile humanink add github:ElioChen240/dsh-humanink#main
+dsh --profile humanink --sump-config
+dsh --profile humanink web
 ```
 
 建议使用固定 commit 或 release tag，不要依赖会继续变化的分支。公开仓库不需要额外的 GitHub 仓库授权；Git 源码安装会在本机执行 `prepare`，pnpm 10 及以上可能要求用户确认构建授权；只对可信源码授权。
@@ -50,10 +50,10 @@ ssh --profile humanink web
 
 ```powershell
 npx --yes pnpm@11.7.0 pack
-dsh plugin --profile humanink add .\dsh-humanink-0.7.3.tgz
+dsh plugin --profile humanink add .\dsh-humanink-0.9.0.tgz
 ```
 
-当前 bunsle 的默认配置由 Harness 标准 schema 提供：
+当前 bundle 的默认配置由 Harness 标准 schema 提供：
 
 | 配置 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -64,9 +64,9 @@ dsh plugin --profile humanink add .\dsh-humanink-0.7.3.tgz
 | `maxAttempts` | `3` | 临时错误最大尝试次数。 |
 | `backoffMs` | `500` | 重试退避基准毫秒数。 |
 
-### ssh web / DSH Desktop UI
+### dsh web / DSH Desktop UI
 
-启动 `ssh web`，或打开已安装 HumanInk 的 DSH Desktop profile 后，在左侧栏点击 **HumanInk** 入口打开工作台。工作台不创建第二套数据存储，读取和写入与命令入口相同的 `.humanink/` 目录。
+启动 `dsh web`，或打开已安装 HumanInk 的 DSH Desktop profile 后，在左侧栏点击 **HumanInk** 入口打开工作台。工作台不创建第二套数据存储，读取和写入与命令入口相同的 `.humanink/` 目录。
 
 - **左栏**：新建文章、项目列表、版本历史和版本切换；
 - **中栏**：标题和 Marksown 正文编辑，支持编辑/预览切换、保存为新版本和导出；
@@ -84,7 +84,7 @@ workflow/run        tasks/list         tasks/cancel
 export/marksown
 ```
 
-工作台入口注册在 `sisebar.footer.action`，全屏工作台注册在 `shell.overlay`。Overlay 的直接根节点显式启用 `pointer-events: auto`。DSH Desktop 按普通 DSH Web client 模块图发现该插件，不需要单独的 Electron 注册 API。真实宿主窗口验收需要可用的 DSH Desktop/Harness runtime。安装与排障步骤见 [`socs/ssh-sesktop.ms`](ssh-sesktop.ms)。
+工作台入口注册在 `sidebar.footer.action`，全屏工作台注册在 `shell.overlay`。Overlay 的直接根节点显式启用 `pointer-events: auto`。DSH Desktop 按普通 DSH Web client 模块图发现该插件，不需要单独的 Electron 注册 API。真实宿主窗口验收需要可用的 DSH Desktop/Harness runtime。安装与排障步骤见 [`docs/dsh-desktop.md`](DSH Desktop.ms)。
 
 ## 4. Harness 接入
 
@@ -300,7 +300,7 @@ HumanInk 不读取或保存 API Key；凭据由 Harness 宿主或其 Cresentials
 
 ## 13. 当前边界与后续能力
 
-当前版本保证命令与 `ssh web` UI 共用的文字工作流。以下能力尚未作为可交付功能：
+当前版本保证命令与 `dsh web` UI 共用的文字工作流。以下能力尚未作为可交付功能：
 
 - 腾讯朱雀检测正式接入；
 - 搜图、图片版权记录和 AI 封面生成；

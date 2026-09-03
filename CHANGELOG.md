@@ -1,3 +1,9 @@
+## [0.9.0] - 2026-09-03
+
+- 交付 HumanInk 2.0 MVP 发布门禁：根包、Host Bundle、Client Bundle、Cordis Patch 和 README 均纳入可安装包校验。
+- 新增 `release:check`，检查 DSH bundle/client manifest、关键发布文件、README 能力边界和 Windows 下发布文件的 UTF-8/LF 格式。
+- 更新 README、使用文档和 DSH Desktop 说明，统一 `dsh-humanink` 包名、安装命令、Bundle 路径和当前 MVP 边界。
+- `npm pack --dry-run --ignore-scripts` 已验证生成 `dsh-humanink-0.9.0.tgz`，真实 DSH Desktop 窗口级验收仍需在安装对应 Desktop/Harness runtime 的机器上执行。
 ## [0.8.10] - 2026-09-03
 
 - 新增 @文章：标题 内容引用模型，支持通过 Workbench Remote 搜索内容并返回不含正文的结构化 mention。
