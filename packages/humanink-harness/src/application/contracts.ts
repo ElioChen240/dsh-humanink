@@ -10,5 +10,5 @@ export type WorkbenchAction = 'titles' | 'brief' | 'outline' | 'draft' | 'humani
 export interface StartActionInput { readonly contentId: string; readonly action: WorkbenchAction; readonly versionId?: string; readonly sourceVersionId?: string; readonly briefVersionId?: string; readonly outlineVersionId?: string; readonly selectedTitle?: string; }
 export type CapabilityStatus = 'ready' | 'missing' | 'unsupported' | 'error';
 export interface CapabilityState { readonly state: CapabilityStatus; readonly reason?: string; readonly action?: string; }
-export interface CapabilityReport { readonly core: CapabilityState; readonly storage: CapabilityState; }
+export interface CapabilityReport { readonly core: CapabilityState; readonly storage: CapabilityState; readonly contentLibrary: CapabilityState; readonly llm: CapabilityState; readonly remote: CapabilityState; readonly credentials: CapabilityState; }
 export type WorkbenchTask = TaskRecord;

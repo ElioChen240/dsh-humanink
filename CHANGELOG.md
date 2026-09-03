@@ -1,5 +1,11 @@
 # 变更记录
 
+## [0.8.5] - 2026-09-03
+
+- 新增只读 `CapabilityService`，统一报告 Core、Storage、内容目录、Harness LLM、Client Remote 和 Credentials 状态。
+- 能力状态限定为 `ready`、`missing`、`unsupported`、`error`；单项探测失败会被隔离，不再导致整个工作台不可用。
+- `HumanInkWorkbenchService` 改为使用可注入的能力来源，为后续 Remote、Tools 和 UI 的局部降级提供统一事实。
+
 ## [0.8.4] - 2026-09-03
 
 - 新增文件型 Workbench Repository，将当前文章和历史版本写为用户可直接编辑的 Markdown，并以 `metadata.json` 保存带版本号的项目索引。

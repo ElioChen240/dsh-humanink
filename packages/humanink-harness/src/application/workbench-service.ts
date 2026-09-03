@@ -8,7 +8,8 @@ type WorkbenchApplication = Pick<HumanInkApplication,
   'createDerivedVersion' | 'generateTitles' | 'generateBrief' | 'generateOutline' |
   'generateDraft' | 'humanizeContent' | 'reviewContent' | 'getTask'>;
 
-export interface HumanInkWorkbenchServiceDependencies { readonly application: WorkbenchApplication; }
+export interface WorkbenchCapabilitySource { inspect(signal?: AbortSignal): Promise<CapabilityReport>; }
+export interface HumanInkWorkbenchServiceDependencies { readonly application: WorkbenchApplication; readonly capabilityService?: WorkbenchCapabilitySource; }
 
 function requireId(value: string | undefined, field: string): string {
   if (value === undefined || value.trim().length === 0) throw new TypeError(`${field} is required for this action`);
@@ -80,6 +81,10 @@ export class HumanInkWorkbenchService {
   }
 
   async getTask(taskId: string, signal?: AbortSignal): Promise<TaskRecord | null> { throwIfAborted(signal); return this.dependencies.application.getTask(taskId); }
-  async getCapabilities(signal?: AbortSignal): Promise<CapabilityReport> { throwIfAborted(signal); return { core: { state: 'ready' }, storage: { state: 'ready' } }; }
+  async getCapabilities(signal?: AbortSignal): Promise<CapabilityReport> {
+    throwIfAborted(signal);
+    if (this.dependencies.capabilityService !== undefined) return this.dependencies.capabilityService.inspect(signal);
+    return { core: { state: 'ready' }, storage: { state: 'ready' }, contentLibrary: { state: 'unsupported' }, llm: { state: 'ready' }, remote: { state: 'unsupported' }, credentials: { state: 'unsupported' } };
+  }
   async getRevision(signal?: AbortSignal): Promise<number> { throwIfAborted(signal); return this.revision; }
 }

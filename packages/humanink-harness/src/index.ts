@@ -1,3 +1,4 @@
+export * from './capabilities/capability-service.js';
 export * from './application/contracts.js';
 export * from './application/workbench-service.js';
 export * from './commands/index.js';
