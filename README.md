@@ -81,6 +81,38 @@ allowBuilds:
 
 如果不希望在安装时执行源码构建，可先在可信环境打包，再安装生成的 `.tgz`。完整说明见 [`docs/usage.md`](docs/usage.md)。
 
+## 给 DeepSeek Harness 的安装 Prompt
+
+如果你希望直接让 DeepSeek Harness 按步骤完成安装、重启和自检，可以把下面这段 Prompt 粘贴到已打开的 Harness 对话中。此 Prompt 不要求你把 API Key、Cookie 或 Token 发到对话里；凭据应继续由 Harness profile 管理。
+
+```text
+你现在是 DeepSeek Harness 的本地插件安装助手，请帮我安装并验证 HumanInk（dsh-humanink）。请严格按以下步骤执行：
+
+1. 先检查当前 Harness 使用的 profile 名称，并确认当前工作目录和 DSH_HOME；不要猜测 profile，也不要修改其他 profile。
+2. 使用当前 profile 安装公开 GitHub 仓库：
+   dsh plugin --profile <当前profile> add github:ElioChen240/dsh-humanink#main
+3. 安装完成后检查插件是否已经加入当前 profile。不要要求我提供 API Key、Authorization、Cookie 或其他密钥。
+4. 完全退出并重新启动 DSH Desktop，不能只刷新网页。
+5. 启动后检查 HumanInk 是否出现在左侧栏或插件入口中；如果存在，打开 HumanInk 工作台。
+6. 做最小验收：
+   - 新建一篇内容；
+   - 确认可以看到内容列表和正文编辑区；
+   - 确认可以启动“生成标题”或“生成简报”任务；
+   - 确认任务状态从 queued/running 变为 succeeded 或显示可读失败原因；
+   - 确认没有把 API Key、Authorization、Cookie 或完整堆栈输出到对话。
+7. 如果入口没有出现，请依次检查：当前 profile 是否正确、Desktop 是否真正重启、插件是否包含 dsh.bundle patch、Web client 是否已加载；不要直接修改 Harness 私有 DOM，也不要删除用户数据。
+8. 最后用表格报告：安装结果、当前 profile、HumanInk 入口、工作台、任务执行、重启恢复、卸载状态。未实际验证的项目必须标记为“未验证”，不要假设成功。
+
+重要边界：HumanInk 当前 0.9.0 MVP 主要提供中文内容生产文字闭环，包括标题、简报、大纲、初稿、人味化、复核、版本管理和 Markdown 导出。搜图、AI 封面、自动选题、腾讯朱雀检测和平台发布暂不属于当前已交付能力。
+```
+
+如果 Harness 不支持从对话直接执行终端命令，请在 DSH Desktop 内置终端手动执行下面的命令，然后重启 Desktop：
+
+```powershell
+dsh plugin --profile humanink add github:ElioChen240/dsh-humanink#main
+```
+
+如果你的 profile 不是 `humanink`，请替换为实际 profile 名称。
 ## 安装与验证
 
 项目使用 pnpm workspace。若机器没有全局 pnpm，可通过 `npx` 调用固定版本：

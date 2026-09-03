@@ -1,3 +1,6 @@
+## [0.9.1] - 2026-09-03
+
+- README 新增 DeepSeek Harness 安装教程和可直接粘贴的安装 Prompt，覆盖 profile 检查、插件安装、Desktop 重启、MVP 验收和安全边界。
 ## [0.9.0] - 2026-09-03
 
 - 交付 HumanInk 2.0 MVP 发布门禁：根包、Host Bundle、Client Bundle、Cordis Patch 和 README 均纳入可安装包校验。
