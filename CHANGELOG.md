@@ -1,5 +1,12 @@
 # 变更记录
 
+## [0.8.4] - 2026-09-03
+
+- 新增文件型 Workbench Repository，将当前文章和历史版本写为用户可直接编辑的 Markdown，并以 `metadata.json` 保存带版本号的项目索引。
+- 写入采用同目录临时文件加原子重命名，metadata 最后提交；目录扫描会隔离损坏项目，并拒绝逃逸内容根目录的项目路径。
+- 新增白名单解码的 `OverlayStore`，以串行 Promise 队列和原子替换避免并发更新丢失，并维护单调 revision。
+- 增加 Windows/Unix 路径安全、损坏数据恢复、临时文件清理和 20 路并发写入测试。
+
 ## [0.8.3] - 2026-09-03
 
 - 新增统一 `HumanInkWorkbenchService` 与公开契约，为后续 Remote、Tools、Skill、Prompt 和 Client 共用同一应用边界。
