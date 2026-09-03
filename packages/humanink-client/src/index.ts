@@ -5,6 +5,8 @@ import { registerHumanInkClientSlots, resolveHumanInkBetterSidebar, type HumanIn
 import { registerHumanInkBetterSidebarAdapter, type BetterSidebarService, type HumanInkWorkbenchTabComponent } from './better-sidebar-adapter.js';
 import { HumanInkSidebarRoot, registerHumanInkNativeShell } from './sidebar/HumanInkSidebarRoot.js';
 import { createHumanInkWorkbenchRemoteClient } from './remote/client.js';
+import { createHumanInkContentSelection, type ContentSelectionStore } from './content-selection.js';
+import { createHumanInkPersistence, type HumanInkStorageLike } from './persistence.js';
 
 /**
  * `betterSidebar` is deliberately NOT in `inject`. Cordis keeps a fiber
@@ -18,7 +20,7 @@ import { createHumanInkWorkbenchRemoteClient } from './remote/client.js';
 export const inject = ['slots', 'connection'] as const;
 
 export interface HumanInkClientOptions { api?: HumanInkClientApi; }
-export interface HumanInkClientPlugin { controller: HumanInkWorkbenchController; ready: Promise<void>; dispose(): void; }
+export interface HumanInkClientPlugin { controller: HumanInkWorkbenchController; contentSelection: ContentSelectionStore; ready: Promise<void>; dispose(): void; }
 
 /** Instances created by apply(); lets tests and hosts reach the controller without breaking the Cordis plugin contract. */
 const activeClients = new Set<HumanInkClientPlugin>();
@@ -51,6 +53,8 @@ const READY_TIMEOUT_MS = 10_000;
 export function apply(context: HumanInkClientContext, options: HumanInkClientOptions = {}): () => void {
   const api = options.api ?? createHumanInkWorkbenchRemoteClient(context.connection.rpc);
   const controller = new HumanInkWorkbenchController(api);
+  const storage = (() => { try { return typeof globalThis.localStorage === 'undefined' ? undefined : globalThis.localStorage as unknown as HumanInkStorageLike; } catch { return undefined; } })();
+  const contentSelection = createHumanInkContentSelection(createHumanInkPersistence(storage ?? { getItem: () => null, setItem: () => undefined, removeItem: () => undefined }));
   const disposers: Array<() => void> = [];
 
   let nativeAdapter: ReturnType<typeof registerHumanInkBetterSidebarAdapter> | undefined;
@@ -78,6 +82,7 @@ export function apply(context: HumanInkClientContext, options: HumanInkClientOpt
 
   const instance: HumanInkClientPlugin = {
     controller,
+    contentSelection,
     ready,
     dispose() { for (const dispose of [...disposers].reverse()) dispose(); disposers.length = 0; },
   };
@@ -96,6 +101,8 @@ export * from './fake-api.js';
 export * from './host-adapter.js';
 export * from './native-workbench.js';
 export * from './remote/client.js';
+export * from './content-trigger.js';
+export * from './content-selection.js';
 export * from './persistence.js';
 export * from './sidebar/HumanInkSidebarRoot.js';
 export * from './sidebar/ContentSidebarPanel.js';
