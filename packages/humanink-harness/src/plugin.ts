@@ -12,6 +12,9 @@ import { FileContentRepository } from '@humanink/storage';
 import { resolve } from 'node:path';
 import { HumanInkWorkbenchService } from './application/workbench-service.js';
 import { CapabilityService } from './capabilities/capability-service.js';
+import { registerHumanInkTools, type HumanInkToolsContext } from './tools/register.js';
+import { registerHumanInkWorkbenchSkill, type HumanInkSkillsContext } from './skills/workbench-skill.js';
+import { registerHumanInkLibraryPrompt, type HumanInkSystemPromptContext } from './prompts/library-prompt.js';
 import { registerHumanInkCommands, type HarnessCommandRegistryLike } from './commands/index.js';
 import { HumanInkApplication } from './runtime/humanink-application.js';
 import { TaskRuntime } from './runtime/task-runtime.js';
@@ -31,6 +34,7 @@ export interface HumanInkHarnessContext {
   readonly commands: HarnessCommandRegistryLike;
   readonly llm: HarnessLlmServiceLike;
   readonly connection?: HumanInkConnectionLike;
+  readonly inject?: (services: readonly string[], callback: (context: unknown) => (() => void) | void) => unknown;
 }
 
 export interface HumanInkHarnessConfig {
@@ -122,6 +126,13 @@ export function apply(ctx: HumanInkHarnessContext, config: HumanInkHarnessConfig
       remote: () => ctx.connection !== undefined,
     }),
   });
+  ctx.inject?.(['tools'], (toolContext) => registerHumanInkTools(toolContext as HumanInkToolsContext, workbench));
+  ctx.inject?.(['skills'], (skillContext) => registerHumanInkWorkbenchSkill(skillContext as HumanInkSkillsContext));
+  ctx.inject?.(['systemPrompt'], (promptContext) => registerHumanInkLibraryPrompt(
+    promptContext as HumanInkSystemPromptContext,
+    () => ({ libraryRoot: dataDir, writingProfile: '' }),
+  ));
+
   const disposeRpc = ctx.connection === undefined ? undefined : registerHumanInkUiRpc(ctx.connection, facade);
   const disposeWorkbenchRemote = ctx.connection === undefined ? undefined : registerHumanInkWorkbenchRemote(ctx.connection, workbench);
 

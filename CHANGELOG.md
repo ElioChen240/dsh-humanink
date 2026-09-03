@@ -1,5 +1,12 @@
 # 变更记录
 
+## [0.8.7] - 2026-09-03
+
+- 新增 11 个 DSH 原生 HumanInk Tools，覆盖引导、配置预览、内容读取/创建、标题、初稿、原创改写、人味化、复核和任务状态查询。
+- 新增 `humanink-workbench` Runtime Skill，约束配置先预览后应用、密钥不进入对话、AI 输出创建新版本，以及异步任务不得把“已启动”误报为“已完成”。
+- 新增紧凑的 `humanink:library` System Prompt section，只注入内容目录、选择摘要、任务状态和写作 profile，不默认注入整篇正文。
+- Harness 通过可选 `ctx.inject` 接入 Tools、Skills 和 System Prompt；缺少这些服务时仍保留命令模式和 Remote 降级能力。
+
 ## [0.8.6] - 2026-09-03
 
 - 新增独立的 `/humanink/workbench` Typed Remote 通道，公开 12 个 MVP invocation，并统一返回可判定的成功/错误结果。

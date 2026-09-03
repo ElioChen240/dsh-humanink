@@ -1,3 +1,6 @@
+export * from './tools/register.js';
+export * from './skills/workbench-skill.js';
+export * from './prompts/library-prompt.js';
 export * from './remote/contract.js';
 export * from './remote/host.js';
 export * from './capabilities/capability-service.js';
