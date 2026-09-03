@@ -1,4 +1,11 @@
 # 变更记录
+
+## [0.8.1] - 2026-09-03
+
+- 完成 HumanInk 2.0 重构设计基线：产品定位调整为集成在 DeepSeek Harness 中的本地 AI 内容生产工作台。
+- 新增 0.9.0 MVP 产品需求、技术架构、DSH 集成协议和分阶段实施计划。
+- 明确渐进重构边界：保留 Core、Storage、任务和版本能力，重写 Client UI 与 DSH Remote、Tool、Skill、Prompt 集成层。
+- 明确 Better Sidebar 仅为可选增强、Windows 为发布阻断平台，搜图、封面、朱雀检测、热点和发布不进入首个重构 MVP。
 ## [0.8.0] - 2026-09-03
 
 - HumanInk 接入 DSH Better Sidebar 原生 Tab：客户端入口按 DSH 生态约定注入 `betterSidebar` 可选服务，注册 `humanink:workbench` / `HumanInk` 单实例 Tab，注册/卸载经 Cordis disposer 管理，HMR 与插件卸载不会产生重复 Tab；
